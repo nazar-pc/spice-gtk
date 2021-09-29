@@ -16,6 +16,8 @@
 */
 #include "config.h"
 
+#include <math.h>
+
 #include "spice-widget.h"
 #include "spice-widget-priv.h"
 #include "spice-gtk-session-priv.h"
@@ -117,12 +119,14 @@ void spice_cairo_draw_event(SpiceDisplay *display, cairo_t *cr)
 
     /* Draw the display */
     if (d->canvas.surface) {
+        cairo_filter_t filter = spice_cairo_get_filter_for_scale(s);
         cairo_translate(cr, x, y);
         cairo_rectangle(cr, 0, 0, w, h);
         cairo_scale(cr, s, s);
         if (!d->canvas.convert)
             cairo_translate(cr, -d->area.x, -d->area.y);
         cairo_set_source_surface(cr, d->canvas.surface, 0, 0);
+        cairo_pattern_set_filter(cairo_get_source(cr), filter);
         cairo_fill(cr);
 
         if (d->mouse_mode == SPICE_MOUSE_MODE_SERVER &&
@@ -134,10 +138,17 @@ void spice_cairo_draw_event(SpiceDisplay *display, cairo_t *cr)
                 cairo_set_source_surface(cr, surface,
                                          (double)(d->mouse_guest_x - d->mouse_hotspot.x) / scale_factor,
                                          (double)(d->mouse_guest_y - d->mouse_hotspot.y) / scale_factor);
+                cairo_pattern_set_filter(cairo_get_source(cr), filter);
                 cairo_paint(cr);
             }
         }
     }
+}
+
+G_GNUC_INTERNAL
+cairo_filter_t spice_cairo_get_filter_for_scale(double s)
+{
+    return s == rint(s) ? CAIRO_FILTER_NEAREST : CAIRO_FILTER_BILINEAR;
 }
 
 G_GNUC_INTERNAL

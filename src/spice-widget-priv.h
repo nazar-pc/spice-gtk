@@ -158,6 +158,7 @@ struct _SpiceDisplayPrivate {
 int      spice_cairo_image_create                 (SpiceDisplay *display);
 void     spice_cairo_image_destroy                (SpiceDisplay *display);
 void     spice_cairo_draw_event                   (SpiceDisplay *display, cairo_t *cr);
+cairo_filter_t  spice_cairo_get_filter_for_scale(double s);
 gboolean spice_allow_scaling                      (SpiceDisplay *display);
 void     spice_display_get_scaling           (SpiceDisplay *display, double *s, int *x, int *y, int *w, int *h);
 gboolean spice_egl_init                      (SpiceDisplay *display, GError **err);

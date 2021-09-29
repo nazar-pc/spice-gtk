@@ -3057,6 +3057,8 @@ static void update_mouse_cursor(SpiceDisplay *display)
     cursor_ctx = cairo_create(target);
     cairo_scale(cursor_ctx, scale, scale);
     cairo_set_source_surface(cursor_ctx, surface, 0, 0);
+    cairo_pattern_set_filter(cairo_get_source(cursor_ctx),
+                             spice_cairo_get_filter_for_scale(scale));
     cairo_paint(cursor_ctx);
 
     d->cursor_surface = cairo_surface_reference(cairo_get_target(cursor_ctx));
