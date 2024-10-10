@@ -2398,6 +2398,7 @@ static void spice_channel_iterate_read(SpiceChannel *channel)
     while (!c->has_error &&
            c->state != SPICE_CHANNEL_STATE_MIGRATING &&
            (g_pollable_input_stream_is_readable(G_POLLABLE_INPUT_STREAM(c->in))
+           || (channel->priv->tls && SSL_has_pending(channel->priv->ssl))
 #ifdef HAVE_SASL
             /* flush the sasl buffer too */
            || c->sasl_decoded != NULL
