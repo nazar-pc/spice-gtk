@@ -519,7 +519,11 @@ static gboolean connect_channel(SpiceAudio *audio, SpiceChannel *channel)
     SpiceGstaudioPrivate *p = gstaudio->priv;
 
     if (SPICE_IS_PLAYBACK_CHANNEL(channel)) {
-        g_return_val_if_fail(p->pchannel == NULL, FALSE);
+        if (p->pchannel) {
+            SPICE_DEBUG("replacing playback channel");
+            g_object_weak_unref(G_OBJECT(p->pchannel), channel_weak_notified, audio);
+            playback_stop(gstaudio);
+        }
 
         p->pchannel = channel;
         g_object_weak_ref(G_OBJECT(p->pchannel), channel_weak_notified, audio);
@@ -538,7 +542,11 @@ static gboolean connect_channel(SpiceAudio *audio, SpiceChannel *channel)
     }
 
     if (SPICE_IS_RECORD_CHANNEL(channel)) {
-        g_return_val_if_fail(p->rchannel == NULL, FALSE);
+        if (p->rchannel) {
+            SPICE_DEBUG("replacing record channel");
+            g_object_weak_unref(G_OBJECT(p->rchannel), channel_weak_notified, audio);
+            record_stop(gstaudio);
+        }
 
         p->rchannel = channel;
         g_object_weak_ref(G_OBJECT(p->rchannel), channel_weak_notified, audio);
