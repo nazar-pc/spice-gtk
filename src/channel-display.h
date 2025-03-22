@@ -60,6 +60,33 @@ struct _SpiceGlScanout {
 };
 
 /**
+ * SpiceGlScanout2:
+ * @fd: drm DMABUF file for each plane that can be imported with eglCreateImageKHR
+ * @width: width of the scanout
+ * @height: height of the scanout
+ * @offset: offset of each plane
+ * @stride: stride of each plane
+ * @num_plane: number of planes
+ * @format: the drm fourcc format
+ * @y0top: orientation of the scanout
+ * @modifier: the drm modifier
+ *
+ * Holds the information necessary for using the GL display scanout.
+ **/
+typedef struct _SpiceGlScanout2 SpiceGlScanout2;
+struct _SpiceGlScanout2 {
+    gint fd[4];
+    guint32 width;
+    guint32 height;
+    guint32 offset[4];
+    guint32 stride[4];
+    guint32 num_planes;
+    guint32 format;
+    gboolean y0top;
+    guint64 modifier;
+};
+
+/**
  * SpiceDisplayMonitorConfig:
  * @id: monitor id
  * @surface_id: monitor surface id
@@ -166,6 +193,8 @@ SPICE_GTK_AVAILABLE_IN_0_35
 const SpiceGlScanout* spice_display_channel_get_gl_scanout(SpiceDisplayChannel *channel);
 SPICE_GTK_AVAILABLE_IN_0_35
 void spice_display_channel_gl_draw_done(SpiceDisplayChannel *channel);
+SPICE_GTK_AVAILABLE_IN_0_43
+const SpiceGlScanout2 *spice_display_channel_get_gl_scanout2(SpiceDisplayChannel *channel);
 
 #ifndef SPICE_DISABLE_DEPRECATED
 SPICE_GTK_DEPRECATED_IN_0_35_FOR(spice_display_channel_change_preferred_compression)

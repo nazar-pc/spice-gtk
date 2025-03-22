@@ -649,7 +649,7 @@ drawing_area_realize(GtkWidget *area, gpointer user_data)
     SpiceDisplay *display = SPICE_DISPLAY(user_data);
 
     if (GDK_IS_X11_DISPLAY(gdk_display_get_default()) &&
-        spice_display_channel_get_gl_scanout(display->priv->display) != NULL) {
+        spice_display_channel_get_gl_scanout2(display->priv->display) != NULL) {
         spice_display_widget_gl_scanout(display);
     }
 #endif
@@ -2710,8 +2710,8 @@ static void update_area(SpiceDisplay *display,
 
 #ifdef HAVE_EGL
     if (egl_enabled(d)) {
-        const SpiceGlScanout *so =
-            spice_display_channel_get_gl_scanout(d->display);
+        const SpiceGlScanout2 *so =
+            spice_display_channel_get_gl_scanout2(d->display);
         g_return_if_fail(so != NULL);
         primary = (GdkRectangle) {
             .width = so->width,
@@ -3326,9 +3326,9 @@ void spice_display_widget_gl_scanout(SpiceDisplay *display)
     set_egl_enabled(display, true);
 
     if (d->egl.context_ready) {
-        const SpiceGlScanout *scanout;
+        const SpiceGlScanout2 *scanout;
 
-        scanout = spice_display_channel_get_gl_scanout(d->display);
+        scanout = spice_display_channel_get_gl_scanout2(d->display);
         /* should only be called when the display has a scanout */
         g_return_if_fail(scanout != NULL);
 
@@ -3420,7 +3420,7 @@ static void channel_new(SpiceSession *s, SpiceChannel *channel, SpiceDisplay *di
                                       G_CALLBACK(spice_display_widget_gl_scanout),
                                       display, G_CONNECT_SWAPPED);
 
-        if (spice_display_channel_get_gl_scanout(d->display)) {
+        if (spice_display_channel_get_gl_scanout2(d->display)) {
             spice_display_widget_gl_scanout(display);
         }
 #ifdef HAVE_EGL
