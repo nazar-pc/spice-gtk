@@ -772,6 +772,7 @@ spice_display_get_gl_scanout(SpiceDisplayChannel *channel)
  * Returns: the current GL scanout, or %NULL if none or not valid
  *
  * Since: 0.35
+ * Deprecated: 0.43: use spice_display_channel_get_gl_scanout2() instead.
  **/
 const SpiceGlScanout *
 spice_display_channel_get_gl_scanout(SpiceDisplayChannel *channel)
