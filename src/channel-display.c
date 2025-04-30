@@ -2118,7 +2118,10 @@ static void display_handle_gl_scanout_unix(SpiceChannel *channel, SpiceMsgIn *in
 
     scanout->drm_dma_buf_fd = -1;
     if (scanout->drm_fourcc_format != 0) {
-        spice_channel_unix_read_fds(channel, &scanout->drm_dma_buf_fd, 1);
+        if (!spice_channel_unix_read_fds(channel, &scanout->drm_dma_buf_fd, 1)) {
+            g_warning("Failed to read dmabuf fds");
+            return;
+        }
         CHANNEL_DEBUG(channel, "gl scanout fd: %d", scanout->drm_dma_buf_fd);
     }
 
@@ -2157,7 +2160,10 @@ static void display_handle_gl_scanout2_unix(SpiceChannel *channel, SpiceMsgIn *i
     }
 
     if (scanout->num_planes) {
-        spice_channel_unix_read_fds(channel, c->scanout.fd, scanout->num_planes);
+        if (!spice_channel_unix_read_fds(channel, c->scanout.fd, scanout->num_planes)) {
+            g_warning("Failed to read dmabuf fds");
+            return;
+        }
     }
 
     c->scanout.y0top = scanout->flags & SPICE_GL_SCANOUT_FLAGS_Y0TOP;

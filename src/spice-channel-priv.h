@@ -204,7 +204,7 @@ void spice_vmc_write_async(SpiceChannel *self,
 gssize spice_vmc_write_finish(SpiceChannel *self,
                               GAsyncResult *result, GError **error);
 #ifdef G_OS_UNIX
-void spice_channel_unix_read_fds(SpiceChannel *channel, int *fds, int max_num_fds);
+gboolean spice_channel_unix_read_fds(SpiceChannel *channel, int *fds, int max_num_fds);
 #endif
 
 G_END_DECLS

@@ -972,11 +972,11 @@ static ssize_t read_fds(int fd, int *msgfds, int max_num_fds)
 }
 
 G_GNUC_INTERNAL
-void spice_channel_unix_read_fds(SpiceChannel *channel, int *fds, int max_num_fds)
+gboolean spice_channel_unix_read_fds(SpiceChannel *channel, int *fds, int max_num_fds)
 {
     SpiceChannelPrivate *c = channel->priv;
 
-    g_return_if_fail(g_socket_get_family(c->sock) == G_SOCKET_FAMILY_UNIX);
+    g_return_val_if_fail(g_socket_get_family(c->sock) == G_SOCKET_FAMILY_UNIX, FALSE);
 
     while (1) {
         /* g_socket_receive_message() is not convenient here because it
@@ -989,9 +989,11 @@ void spice_channel_unix_read_fds(SpiceChannel *channel, int *fds, int max_num_fd
             g_coroutine_socket_wait(&c->coroutine, c->sock, G_IO_IN);
         } else {
             g_warning("failed to get fd: %s", g_strerror(errno));
-            return;
+            return FALSE;
         }
     }
+
+    return TRUE;
 }
 #endif
 
