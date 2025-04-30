@@ -666,6 +666,8 @@ gboolean spice_egl_update_scanout(SpiceDisplay *display,
     };
 
     g_return_val_if_fail(scanout != NULL, FALSE);
+    g_return_val_if_fail(scanout->num_planes <= 4, FALSE);
+
     format = scanout->format;
 
     if (d->egl.image != NULL) {
