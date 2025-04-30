@@ -21,6 +21,10 @@
 #endif
 #include <glib/gi18n-lib.h>
 
+#ifdef G_OS_UNIX
+#include <drm/drm_fourcc.h>
+#endif
+
 #include "spice-client.h"
 #include "spice-common.h"
 
@@ -67,7 +71,8 @@ struct _SpiceDisplayChannelPrivate {
     GArray                      *monitors;
     guint                       monitors_max;
     gboolean                    enable_adaptive_streaming;
-    SpiceGlScanout scanout;
+    SpiceGlScanout              scanout_ret;
+    SpiceGlScanout2             scanout;
 };
 
 G_DEFINE_TYPE_WITH_PRIVATE(SpiceDisplayChannel, spice_display_channel, SPICE_TYPE_CHANNEL)
@@ -151,9 +156,11 @@ static void spice_display_channel_dispose(GObject *object)
         c->mark_false_event_id = 0;
     }
 
-    if (c->scanout.fd >= 0) {
-        close(c->scanout.fd);
-        c->scanout.fd = -1;
+    for (int i = 0; i < c->scanout.num_planes; i++) {
+        if (c->scanout.fd[i] >= 0) {
+            close(c->scanout.fd[i]);
+            c->scanout.fd[i] = -1;
+        }
     }
 
     if (G_OBJECT_CLASS(spice_display_channel_parent_class)->dispose)
@@ -765,13 +772,43 @@ spice_display_get_gl_scanout(SpiceDisplayChannel *channel)
  * Returns: the current GL scanout, or %NULL if none or not valid
  *
  * Since: 0.35
+ * Deprecated: 0.43: use spice_display_channel_get_gl_scanout2() instead.
  **/
 const SpiceGlScanout *
 spice_display_channel_get_gl_scanout(SpiceDisplayChannel *channel)
 {
     g_return_val_if_fail(SPICE_IS_DISPLAY_CHANNEL(channel), NULL);
 
-    return channel->priv->scanout.fd != -1 ? &channel->priv->scanout : NULL;
+    SpiceGlScanout2 *scanout = &channel->priv->scanout;
+    if (scanout->fd[0] < 0 || scanout->num_planes > 1)
+        return NULL;
+
+    SpiceGlScanout *scanout_ret = &channel->priv->scanout_ret;
+    scanout_ret->fd = scanout->fd[0];
+    scanout_ret->width = scanout->width;
+    scanout_ret->height = scanout->height;
+    scanout_ret->stride = scanout->stride[0];
+    scanout_ret->format = scanout->format;
+    scanout_ret->y0top = scanout->y0top;
+    return scanout_ret;
+}
+
+/**
+ * spice_display_channel_get_gl_scanout2:
+ * @channel: a #SpiceDisplayChannel
+ *
+ * Retrieves the GL scanout with multi plane info if available
+ *
+ * Returns: the current GL scanout, or %NULL if none or not valid
+ *
+ * Since: 0.43
+ **/
+const SpiceGlScanout2 *
+spice_display_channel_get_gl_scanout2(SpiceDisplayChannel *channel)
+{
+    g_return_val_if_fail(SPICE_IS_DISPLAY_CHANNEL(channel), NULL);
+
+    return channel->priv->scanout.fd[0] != -1 ? &channel->priv->scanout : NULL;
 }
 
 /* ------------------------------------------------------------------ */
@@ -940,6 +977,7 @@ static void spice_display_channel_set_capabilities(SpiceChannel *channel)
     }
     if (spice_session_get_gl_scanout_enabled(s)) {
         spice_channel_set_capability(channel, SPICE_DISPLAY_CAP_GL_SCANOUT);
+        spice_channel_set_capability(channel, SPICE_DISPLAY_CAP_GL_SCANOUT2);
     }
     spice_channel_set_capability(channel, SPICE_DISPLAY_CAP_MULTI_CODEC);
 #ifdef HAVE_BUILTIN_MJPEG
@@ -973,7 +1011,8 @@ static void spice_display_channel_init(SpiceDisplayChannel *channel)
     c->palette_cache.ops = &palette_cache_ops;
     c->image_surfaces.ops = &image_surfaces_ops;
     c->monitors_max = 1;
-    c->scanout.fd = -1;
+    for (int i = 0; i < 4; i++)
+        c->scanout.fd[i] = -1;
 
     if (g_getenv("SPICE_DISABLE_ADAPTIVE_STREAMING")) {
         SPICE_DEBUG("adaptive video disabled");
@@ -2079,18 +2118,65 @@ static void display_handle_gl_scanout_unix(SpiceChannel *channel, SpiceMsgIn *in
 
     scanout->drm_dma_buf_fd = -1;
     if (scanout->drm_fourcc_format != 0) {
-        scanout->drm_dma_buf_fd = spice_channel_unix_read_fd(channel);
+        if (!spice_channel_unix_read_fds(channel, &scanout->drm_dma_buf_fd, 1)) {
+            g_warning("Failed to read dmabuf fds");
+            return;
+        }
         CHANNEL_DEBUG(channel, "gl scanout fd: %d", scanout->drm_dma_buf_fd);
     }
 
+    for (int i = 0; i < c->scanout.num_planes; i++) {
+        if (c->scanout.fd[i] >= 0) {
+            close(c->scanout.fd[i]);
+            c->scanout.fd[i] = -1;
+        }
+    }
+
     c->scanout.y0top = scanout->flags & SPICE_GL_SCANOUT_FLAGS_Y0TOP;
-    if (c->scanout.fd >= 0)
-        close(c->scanout.fd);
-    c->scanout.fd = scanout->drm_dma_buf_fd;
+    c->scanout.fd[0] = scanout->drm_dma_buf_fd;
     c->scanout.width = scanout->width;
     c->scanout.height = scanout->height;
-    c->scanout.stride = scanout->stride;
+    c->scanout.stride[0] = scanout->stride;
     c->scanout.format = scanout->drm_fourcc_format;
+
+    c->scanout.offset[0] = 0;
+    c->scanout.modifier = DRM_FORMAT_MOD_INVALID;
+    c->scanout.num_planes = 1;
+
+    g_coroutine_object_notify(G_OBJECT(channel), "gl-scanout");
+}
+
+static void display_handle_gl_scanout2_unix(SpiceChannel *channel, SpiceMsgIn *in)
+{
+    SpiceDisplayChannel *display = SPICE_DISPLAY_CHANNEL(channel);
+    SpiceDisplayChannelPrivate *c = display->priv;
+    SpiceMsgDisplayGlScanout2Unix *scanout = spice_msg_in_parsed(in);
+
+    for (int i = 0; i < c->scanout.num_planes; i++) {
+        if (c->scanout.fd[i] >= 0) {
+            close(c->scanout.fd[i]);
+            c->scanout.fd[i] = -1;
+        }
+    }
+
+    if (scanout->num_planes) {
+        if (!spice_channel_unix_read_fds(channel, c->scanout.fd, scanout->num_planes)) {
+            g_warning("Failed to read dmabuf fds");
+            return;
+        }
+    }
+
+    c->scanout.y0top = scanout->flags & SPICE_GL_SCANOUT_FLAGS_Y0TOP;
+    c->scanout.width = scanout->width;
+    c->scanout.height = scanout->height;
+    c->scanout.format = scanout->fourcc;
+    c->scanout.modifier = scanout->modifier;
+    c->scanout.num_planes = scanout->num_planes;
+
+    for (int i = 0; i < scanout->num_planes; i++) {
+        c->scanout.offset[i] = scanout->planes[i].offset;
+        c->scanout.stride[i] = scanout->planes[i].stride;
+    }
 
     g_coroutine_object_notify(G_OBJECT(channel), "gl-scanout");
 }
@@ -2190,6 +2276,7 @@ static void channel_set_handlers(SpiceChannelClass *klass)
         [ SPICE_MSG_DISPLAY_MONITORS_CONFIG ]    = display_handle_monitors_config,
 #ifdef G_OS_UNIX
         [ SPICE_MSG_DISPLAY_GL_SCANOUT_UNIX ]    = display_handle_gl_scanout_unix,
+        [ SPICE_MSG_DISPLAY_GL_SCANOUT2_UNIX ]   = display_handle_gl_scanout2_unix,
 #endif
         [ SPICE_MSG_DISPLAY_GL_DRAW ]            = display_handle_gl_draw,
     };

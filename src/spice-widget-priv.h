@@ -148,7 +148,7 @@ struct _SpiceDisplayPrivate {
         guint               prog;
         EGLImageKHR         image;
         gboolean            call_draw_done;
-        SpiceGlScanout      scanout;
+        SpiceGlScanout2     scanout;
     } egl;
 #endif // HAVE_EGL
     double scroll_delta_y;
@@ -167,7 +167,7 @@ void     spice_egl_unrealize_display         (SpiceDisplay *display);
 void     spice_egl_update_display            (SpiceDisplay *display);
 void     spice_egl_resize_display            (SpiceDisplay *display, int w, int h);
 gboolean spice_egl_update_scanout            (SpiceDisplay *display,
-                                              const SpiceGlScanout *scanout,
+                                              const SpiceGlScanout2 *scanout,
                                               GError **err);
 void     spice_egl_cursor_set                (SpiceDisplay *display);
 

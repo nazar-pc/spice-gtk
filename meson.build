@@ -4,7 +4,7 @@
 project('spice-gtk', 'c',
          version : run_command('build-aux/git-version-gen', '@0@/.tarball-version'.format(meson.project_source_root()), check : true).stdout().strip(),
          license : 'LGPLv2.1',
-         meson_version : '>= 0.56',
+         meson_version : '>= 0.58',
          default_options : ['buildtype=debugoptimized',
                             'warning_level=2'])
 
@@ -35,7 +35,7 @@ spice_glib_deps = []
 spice_gtk_deps = []
 spice_wayland_deps = []
 spice_acl_deps = []
-spice_protocol_version = '0.14.3'
+spice_protocol_version = '0.14.5'
 
 #
 # Set up subprojects
