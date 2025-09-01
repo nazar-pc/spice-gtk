@@ -985,7 +985,8 @@ static void spice_display_channel_set_capabilities(SpiceChannel *channel)
 #endif
     for (i = 1; i < G_N_ELEMENTS(gst_opts); i++) {
         if (gstvideo_has_codec(i)) {
-            spice_channel_set_capability(channel, gst_opts[i].cap);
+            /* use extra parenthesis to avoid an unwanted macro expansion */
+            (spice_channel_set_capability)(channel, gst_opts[i].cap);
         } else {
             SPICE_DEBUG("GStreamer does not support the %s codec", gst_opts[i].name);
         }
