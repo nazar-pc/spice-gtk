@@ -1295,13 +1295,13 @@ static void ungrab_pointer(SpiceDisplay *display)
                 g_warning("keyboard grab failed %u", status);
                 d->keyboard_grab_active = false;
             }
-#ifdef HAVE_WAYLAND_PROTOCOLS
-            if (d->mouse_mode == SPICE_MOUSE_MODE_SERVER) {
-                spice_wayland_extensions_disable_relative_pointer(widget);
-                spice_wayland_extensions_unlock_pointer(widget);
-            }
-#endif
         }
+#ifdef HAVE_WAYLAND_PROTOCOLS
+        if (d->mouse_mode == SPICE_MOUSE_MODE_SERVER) {
+            spice_wayland_extensions_disable_relative_pointer(widget);
+            spice_wayland_extensions_unlock_pointer(widget);
+        }
+#endif
 
         return;
     }
