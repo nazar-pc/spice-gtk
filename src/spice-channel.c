@@ -2551,6 +2551,15 @@ static int spice_channel_load_ca(SpiceChannel *channel)
             g_warning("loading ca certs from default location failed");
         else
             count++;
+
+#if defined(G_OS_WIN32) && OPENSSL_VERSION_NUMBER >= 0x30200000
+        rc = SSL_CTX_load_verify_store(c->ctx, "org.openssl.winstore://");
+        if (rc != 1) {
+            g_warning("enabling windows certificate store failed");
+        } else {
+            count++;
+        }
+#endif
     }
 
     return count;
