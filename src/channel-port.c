@@ -262,8 +262,8 @@ static void port_handle_msg(SpiceChannel *channel, SpiceMsgIn *in)
  * containing the data to write
  * @count: the number of bytes to write
  * @cancellable: (allow-none): optional GCancellable object, NULL to ignore
- * @callback: (scope async): callback to call when the request is satisfied
- * @user_data: (closure): the data to pass to callback function
+ * @callback: (scope async) (closure user_data): callback to call when the request is satisfied
+ * @user_data: the data to pass to callback function
  *
  * Request an asynchronous write of count bytes from @buffer into the
  * @port. When the operation is finished @callback will be called. You
@@ -289,8 +289,8 @@ void spice_port_write_async(SpicePortChannel *self,
  * containing the data to write
  * @count: the number of bytes to write
  * @cancellable: (allow-none): optional GCancellable object, NULL to ignore
- * @callback: (scope async): callback to call when the request is satisfied
- * @user_data: (closure): the data to pass to callback function
+ * @callback: (scope async) (closure user_data): callback to call when the request is satisfied
+ * @user_data: the data to pass to callback function
  *
  * Request an asynchronous write of count bytes from @buffer into the
  * @port. When the operation is finished @callback will be called. You

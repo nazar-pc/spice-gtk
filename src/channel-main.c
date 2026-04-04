@@ -3398,10 +3398,10 @@ static void file_transfer_operation_send_progress(SpiceFileTransferTask *xfer_ta
  * @sources: (array zero-terminated=1): a %NULL-terminated array of #GFile objects to be transferred
  * @flags: set of #GFileCopyFlags
  * @cancellable: (allow-none): optional #GCancellable object, %NULL to ignore
- * @progress_callback: (allow-none) (scope call): function to callback with
+ * @progress_callback: (allow-none) (scope call) (closure progress_callback_data): function to callback with
  *     progress information, or %NULL if progress information is not needed
- * @progress_callback_data: (closure): user data to pass to @progress_callback
- * @callback: a #GAsyncReadyCallback to call when the request is satisfied
+ * @progress_callback_data: user data to pass to @progress_callback
+ * @callback: (scope async) (closure user_data): a #GAsyncReadyCallback to call when the request is satisfied
  * @user_data: the data to pass to callback function
  *
  * See: spice_main_channel_file_copy_async()
@@ -3427,10 +3427,10 @@ void spice_main_file_copy_async(SpiceMainChannel *channel,
  * @sources: (array zero-terminated=1): a %NULL-terminated array of #GFile objects to be transferred
  * @flags: set of #GFileCopyFlags
  * @cancellable: (allow-none): optional #GCancellable object, %NULL to ignore
- * @progress_callback: (allow-none) (scope call): function to callback with
+ * @progress_callback: (allow-none) (scope call) (closure progress_callback_data): function to callback with
  *     progress information, or %NULL if progress information is not needed
- * @progress_callback_data: (closure): user data to pass to @progress_callback
- * @callback: a #GAsyncReadyCallback to call when the request is satisfied
+ * @progress_callback_data: user data to pass to @progress_callback
+ * @callback: (scope async) (closure user_data): a #GAsyncReadyCallback to call when the request is satisfied
  * @user_data: the data to pass to callback function
  *
  * Copies the file @sources to guest

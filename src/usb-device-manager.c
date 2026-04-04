@@ -1307,8 +1307,8 @@ void _disconnect_device_async_cb(GObject *gobject,
  * @manager: the #SpiceUsbDeviceManager manager.
  * @device: a connected #SpiceUsbDevice to disconnect.
  * @cancellable: (nullable): optional #GCancellable object, %NULL to ignore.
- * @callback: (scope async): a #GAsyncReadyCallback to call when the request is satisfied.
- * @user_data: (closure): the data to pass to @callback.
+ * @callback: (scope async) (closure user_data): a #GAsyncReadyCallback to call when the request is satisfied.
+ * @user_data: the data to pass to @callback.
  *
  * Asynchronously disconnects the @device. When completed, @callback will be called.
  * Then it is possible to call spice_usb_device_manager_disconnect_device_finish()

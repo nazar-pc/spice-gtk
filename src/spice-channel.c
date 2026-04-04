@@ -3182,8 +3182,8 @@ static void spice_channel_send_migration_handshake(SpiceChannel *channel)
  * spice_channel_flush_async:
  * @channel: a #SpiceChannel
  * @cancellable: (allow-none): optional GCancellable object, %NULL to ignore
- * @callback: (scope async): callback to call when the request is satisfied
- * @user_data: (closure): the data to pass to callback function
+ * @callback: (scope async) (closure user_data): callback to call when the request is satisfied
+ * @user_data: the data to pass to callback function
  *
  * Forces an asynchronous write of all user-space buffered data for
  * the given channel.
