@@ -455,14 +455,14 @@ SpiceUsbDeviceWidgetPrivate
 
 <SECTION>
 <FILE>spice-util</FILE>
-spice_util_set_debug
-spice_util_get_version_string
-spice_uuid_to_string
+spice_glib_set_debug
+spice_glib_get_version_string
+spice_glib_uuid_to_string
 <SUBSECTION Private>
 SPICE_DEBUG
-spice_util_get_debug
+spice_glib_get_debug
 SPICE_RESERVED_PADDING
-spice_g_signal_connect_object
+spice_glib_signal_connect_object
 </SECTION>
 
 <SECTION>
