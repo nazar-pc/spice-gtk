@@ -2643,6 +2643,12 @@ reconnect:
 
         SSL_CTX_set_options(c->ctx, ssl_options);
 
+        X509_VERIFY_PARAM *param = SSL_CTX_get0_param(c->ctx);
+        rc = X509_VERIFY_PARAM_set_flags(param, X509_V_FLAG_PARTIAL_CHAIN);
+        if (rc != 1) {
+            g_warning("enabling partial chain verification failed");
+        }
+
         verify = spice_session_get_verify(c->session);
         if (verify &
             (SPICE_SESSION_VERIFY_SUBJECT | SPICE_SESSION_VERIFY_HOSTNAME)) {
