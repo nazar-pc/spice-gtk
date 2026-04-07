@@ -33,3 +33,6 @@ base_url = "https://gitlab.freedesktop.org/spice/spice-gtk/-/blob/master/"
 
 [extra]
 urlmap_file = "urlmap.js"
+content_files = [
+  "gtk-overview.md",
+]

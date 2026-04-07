@@ -12,6 +12,12 @@ gidocgen = find_program('gi-docgen')
 
 docs_dir = spice_gtk_datadir / 'doc'
 
+glib_content_files = files(
+  'overview.md',
+  'session-channels.md',
+  'application-support.md',
+)
+
 glib_toml = configure_file(
   input: 'SpiceClientGLib.toml.in',
   output: 'SpiceClientGLib.toml',
@@ -33,12 +39,17 @@ custom_target('spice-client-glib-doc',
     '@INPUT1@',
   ],
   depends: spice_client_glib_gir[0],
+  depend_files: glib_content_files,
   build_by_default: true,
   install: true,
   install_dir: docs_dir,
 )
 
 if spice_gtk_has_gtk
+  gtk_content_files = files(
+    'gtk-overview.md',
+  )
+
   gtk_toml = configure_file(
     input: 'SpiceClientGtk.toml.in',
     output: 'SpiceClientGtk.toml',
@@ -60,6 +71,7 @@ if spice_gtk_has_gtk
       '@INPUT1@',
     ],
     depends: [spice_client_gtk_gir[0], spice_client_glib_gir[0]],
+    depend_files: gtk_content_files,
     build_by_default: true,
     install: true,
     install_dir: docs_dir,
