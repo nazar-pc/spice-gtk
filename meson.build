@@ -438,9 +438,11 @@ subdir('src')
 subdir('tools')
 subdir('tests')
 if build_machine.system() == 'windows'
-  message('Disabling gtk-doc while building on Windows')
+  message('Disabling documentation while building on Windows')
+elif not spice_gtk_has_introspection
+  message('Disabling documentation without introspection')
 else
-  d = find_program('gtkdoc-scan', required : get_option('gtk_doc'))
+  d = find_program('gi-docgen', required : get_option('gtk_doc'))
   if d.found()
     subdir('doc')
   endif

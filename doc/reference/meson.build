@@ -1,64 +1,67 @@
-ignore_headers = [
-  'bio-gio.h',
-  'channel-display-priv.h',
-  'channel-usbredir-priv.h',
-  'client_sw_canvas.h',
-  'continuation.h',
-  'coroutine.h',
-  'decode.h',
-  'desktop-integration.h',
-  'gio-coroutine.h',
-  'giopipe.h',
-  'smartcard-manager-priv.h',
-  'spice-audio-priv.h',
-  'spice-channel-cache.h',
-  'spice-channel-priv.h',
-  'spice-common.h',
-  'spice-file-transfer-task-priv.h',
-  'spice-grabsequence-priv.h',
-  'spice-gstaudio.h',
-  'spice-gtk-session-priv.h',
-  'spice-marshal.h',
-  'spice-session-priv.h',
-  'spice-uri-priv.h',
-  'spice-util-priv.h',
-  'spice-widget-priv.h',
-  'usb-acl-helper.h',
-  'usb-device-manager-priv.h',
-  'usbdk_api.h',
-  'usbutil.h',
-  'vmcstream.h',
-  'vncdisplaykeymap.h',
-  'win-usb-dev.h',
-]
+toml_conf = configuration_data()
+# Extract a clean major.minor.micro version for gi-docgen,
+# as it cannot parse git-describe suffixes like "0.42.51-942a"
+_doc_version_info = meson.project_version().split('.')
+_doc_micro = '0'
+if _doc_version_info.length() > 2
+  _doc_micro = _doc_version_info[2].split('-')[0]
+endif
+toml_conf.set('VERSION', '.'.join([_doc_version_info[0], _doc_version_info[1], _doc_micro]))
 
-spice_gtk_doc_dep = declare_dependency(link_with : [spice_client_gtk_lib, spice_client_glib_lib])
+gidocgen = find_program('gi-docgen')
 
-glib_prefix = dependency('glib-2.0').get_variable(pkgconfig: 'prefix')
-glib_docpath = glib_prefix / 'share' / 'gtk-doc' / 'html'
-gtk_prefix = dependency('gtk+-3.0').get_variable(pkgconfig: 'prefix')
-gtk_docpath = gtk_prefix / 'share' / 'gtk-doc' / 'html'
-docpath = spice_gtk_datadir / 'gtk-doc' / 'html'
+docs_dir = spice_gtk_datadir / 'doc'
 
-gnome.gtkdoc(meson.project_name(),
-             dependencies : spice_gtk_doc_dep,
-             main_xml : meson.project_name() + '-docs.xml',
-             ignore_headers : ignore_headers,
-             include_directories: spice_gtk_include,
-             c_args : '-DSPICE_COMPILATION',
-             install : true,
-             scan_args : [
-               '--deprecated-guards="SPICE_DISABLE_DEPRECATED"',
-               '--ignore-decorators="G_GNUC_INTERNAL"',
-               '--rebuild-types',
-               meson.project_build_root() / 'src' / 'spice-version.h'
-             ],
-             src_dir : meson.project_source_root() / 'src',
-             fixxref_args: [
-               '--html-dir=@0@'.format(docpath),
-               '--extra-dir=@0@'.format(glib_docpath / 'glib'),
-               '--extra-dir=@0@'.format(glib_docpath / 'gobject'),
-               '--extra-dir=@0@'.format(glib_docpath / 'gio'),
-               '--extra-dir=@0@'.format(gtk_docpath / 'gtk3'),
-             ],
-            )
+glib_toml = configure_file(
+  input: 'SpiceClientGLib.toml.in',
+  output: 'SpiceClientGLib.toml',
+  configuration: toml_conf,
+)
+
+custom_target('spice-client-glib-doc',
+  input: [glib_toml, spice_client_glib_gir[0]],
+  output: 'SpiceClientGLib-2.0',
+  command: [
+    gidocgen,
+    'generate',
+    '--quiet',
+    '--no-namespace-dir',
+    '--add-include-path=@0@'.format(meson.project_build_root() / 'src'),
+    '--config=@INPUT0@',
+    '--output-dir=@OUTPUT@',
+    '--content-dir=@0@'.format(meson.current_source_dir()),
+    '@INPUT1@',
+  ],
+  depends: spice_client_glib_gir[0],
+  build_by_default: true,
+  install: true,
+  install_dir: docs_dir,
+)
+
+if spice_gtk_has_gtk
+  gtk_toml = configure_file(
+    input: 'SpiceClientGtk.toml.in',
+    output: 'SpiceClientGtk.toml',
+    configuration: toml_conf,
+  )
+
+  custom_target('spice-client-gtk-doc',
+    input: [gtk_toml, spice_client_gtk_gir[0]],
+    output: 'SpiceClientGtk-3.0',
+    command: [
+      gidocgen,
+      'generate',
+      '--quiet',
+      '--no-namespace-dir',
+      '--add-include-path=@0@'.format(meson.project_build_root() / 'src'),
+      '--config=@INPUT0@',
+      '--output-dir=@OUTPUT@',
+      '--content-dir=@0@'.format(meson.current_source_dir()),
+      '@INPUT1@',
+    ],
+    depends: [spice_client_gtk_gir[0], spice_client_glib_gir[0]],
+    build_by_default: true,
+    install: true,
+    install_dir: docs_dir,
+  )
+endif
