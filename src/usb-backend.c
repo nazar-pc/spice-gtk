@@ -139,6 +139,8 @@ static SpiceUsbDevice *allocate_backend_device(libusb_device *libdev)
     dev->libusb_device = libdev;
     if (!fill_usb_info(dev)) {
         g_clear_pointer(&dev, g_free);
+    } else {
+        libusb_ref_device(libdev);
     }
     return dev;
 }
@@ -157,7 +159,6 @@ static int LIBUSB_CALL hotplug_callback(libusb_context *ctx,
     dev = allocate_backend_device(libdev);
     if (dev) {
         SPICE_DEBUG("created dev %p, usblib dev %p", dev, libdev);
-        libusb_ref_device(libdev);
         be->hotplug_callback(be->hotplug_user_data, dev, arrived);
         spice_usb_backend_device_unref(dev);
     }
