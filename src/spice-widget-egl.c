@@ -359,6 +359,19 @@ gl_make_current(SpiceDisplay *display, GError **err)
     return TRUE;
 }
 
+static void
+spice_egl_prepare_default_framebuffer(void)
+{
+#ifdef GDK_WINDOWING_X11
+    if (!GDK_IS_X11_DISPLAY(gdk_display_get_default())) {
+        return;
+    }
+
+    glDrawBuffer(GL_BACK);
+    glReadBuffer(GL_BACK);
+#endif
+}
+
 static gboolean spice_widget_init_egl_win(SpiceDisplay *display, GdkWindow *win,
                                           GError **err)
 {
@@ -591,6 +604,8 @@ void spice_egl_update_display(SpiceDisplay *display)
     g_return_if_fail(d->ready);
     if (!gl_make_current(display, NULL))
         return;
+
+    spice_egl_prepare_default_framebuffer();
 
     spice_display_get_scaling(display, &s, &x, &y, &w, &h);
 
