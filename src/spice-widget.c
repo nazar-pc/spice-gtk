@@ -671,6 +671,20 @@ static void spice_display_init(SpiceDisplay *display)
                      "signal::draw", draw_event, display,
                      "signal::realize", drawing_area_realize, display,
                      NULL);
+#ifdef HAVE_EGL
+#ifdef GDK_WINDOWING_X11
+    if (GDK_IS_X11_DISPLAY(gdk_display_get_default())) {
+        GError *err = NULL;
+
+        if (!spice_egl_init(display, &err)) {
+            g_critical("egl init failed: %s", err->message);
+            g_clear_error(&err);
+        } else {
+            spice_egl_set_x11_window_visual(display, area);
+        }
+    }
+#endif
+#endif
     gtk_stack_add_named(d->stack, area, "draw-area");
     gtk_stack_set_visible_child(d->stack, area);
 
@@ -3305,21 +3319,23 @@ void spice_display_widget_gl_scanout(SpiceDisplay *display)
 #ifdef GDK_WINDOWING_X11
     GtkWidget *area = gtk_stack_get_child_by_name(d->stack, "draw-area");
 
-    if (GDK_IS_X11_DISPLAY(gdk_display_get_default()) &&
-        !d->egl.context_ready &&
-        gtk_widget_get_realized(area)) {
-        if (!spice_egl_init(display, &err)) {
-            g_critical("egl init failed: %s", err->message);
-            g_clear_error(&err);
+    if (GDK_IS_X11_DISPLAY(gdk_display_get_default()) && gtk_widget_get_realized(area)) {
+        if (!d->egl.context_ready) {
+            if (!spice_egl_init(display, &err)) {
+                g_critical("egl init failed: %s", err->message);
+                g_clear_error(&err);
+            }
         }
 
-        if (!spice_egl_realize_display(display, gtk_widget_get_window(area), &err)) {
-            g_critical("egl realize failed: %s", err->message);
-            g_clear_error(&err);
-        }
+        if (d->egl.context_ready && d->egl.surface == EGL_NO_SURFACE) {
+            if (!spice_egl_realize_display(display, gtk_widget_get_window(area), &err)) {
+                g_critical("egl realize failed: %s", err->message);
+                g_clear_error(&err);
+            }
 
-        gint scale_factor = gtk_widget_get_scale_factor(GTK_WIDGET(display));
-        spice_egl_resize_display(display, d->ww * scale_factor, d->wh * scale_factor);
+            gint scale_factor = gtk_widget_get_scale_factor(GTK_WIDGET(display));
+            spice_egl_resize_display(display, d->ww * scale_factor, d->wh * scale_factor);
+        }
     }
 #endif
 

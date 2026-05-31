@@ -284,13 +284,49 @@ end:
 
     d->egl.context_ready = TRUE;
 
-    if (spice_display_channel_get_gl_scanout2(d->display) != NULL) {
+    if (d->display != NULL &&
+        spice_display_channel_get_gl_scanout2(d->display) != NULL) {
         DISPLAY_DEBUG(display, "scanout present during egl init, updating widget");
         spice_display_widget_gl_scanout(display);
         spice_display_widget_update_monitor_area(display);
     }
 
     return TRUE;
+}
+
+G_GNUC_INTERNAL
+void spice_egl_set_x11_window_visual(SpiceDisplay *display, GtkWidget *widget)
+{
+#ifdef GDK_WINDOWING_X11
+    SpiceDisplayPrivate *d = display->priv;
+    EGLint visual_id = 0;
+    GdkVisual *visual;
+
+    if (!GDK_IS_X11_DISPLAY(gdk_display_get_default()) ||
+        d->egl.display == EGL_NO_DISPLAY ||
+        d->egl.conf == NULL) {
+        return;
+    }
+
+    if (gtk_widget_get_realized(widget)) {
+        return;
+    }
+
+    if (eglGetConfigAttrib(d->egl.display, d->egl.conf,
+                           EGL_NATIVE_VISUAL_ID, &visual_id) != EGL_TRUE ||
+        visual_id == 0) {
+        return;
+    }
+
+    visual = gdk_x11_screen_lookup_visual(gtk_widget_get_screen(widget),
+                                          visual_id);
+    if (visual == NULL) {
+        g_warning("No GDK visual found for EGL native visual 0x%x", visual_id);
+        return;
+    }
+
+    gtk_widget_set_visual(widget, visual);
+#endif
 }
 
 static gboolean
@@ -334,6 +370,11 @@ static gboolean spice_widget_init_egl_win(SpiceDisplay *display, GdkWindow *win,
 
 #ifdef GDK_WINDOWING_X11
     if (GDK_IS_X11_WINDOW(win)) {
+        if (!gdk_window_ensure_native(win)) {
+            g_set_error_literal(err, SPICE_CLIENT_ERROR, SPICE_CLIENT_ERROR_FAILED,
+                                "failed to ensure native X11 window for EGL");
+            return FALSE;
+        }
         native = (EGLNativeWindowType)GDK_WINDOW_XID(win);
     }
 #endif
@@ -349,8 +390,9 @@ static gboolean spice_widget_init_egl_win(SpiceDisplay *display, GdkWindow *win,
                                             native, NULL);
 
     if (!d->egl.surface) {
-        g_set_error_literal(err, SPICE_CLIENT_ERROR, SPICE_CLIENT_ERROR_FAILED,
-                            "failed to init egl surface");
+        g_set_error(err, SPICE_CLIENT_ERROR, SPICE_CLIENT_ERROR_FAILED,
+                    "failed to init egl surface: egl_error=0x%x",
+                    eglGetError());
         return FALSE;
     }
 

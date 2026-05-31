@@ -166,6 +166,7 @@ gboolean spice_egl_realize_display           (SpiceDisplay *display, GdkWindow *
 void     spice_egl_unrealize_display         (SpiceDisplay *display);
 void     spice_egl_update_display            (SpiceDisplay *display);
 void     spice_egl_resize_display            (SpiceDisplay *display, int w, int h);
+void     spice_egl_set_x11_window_visual     (SpiceDisplay *display, GtkWidget *widget);
 gboolean spice_egl_update_scanout            (SpiceDisplay *display,
                                               const SpiceGlScanout2 *scanout,
                                               GError **err);
