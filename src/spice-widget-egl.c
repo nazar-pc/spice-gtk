@@ -581,6 +581,7 @@ void spice_egl_cursor_set(SpiceDisplay *display)
     int width = gdk_pixbuf_get_width(image);
     int height = gdk_pixbuf_get_height(image);
 
+    glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, d->egl.tex_pointer_id);
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -638,6 +639,7 @@ void spice_egl_update_display(SpiceDisplay *display)
     }
     DISPLAY_DEBUG(display, "update %f +%d+%d %dx%d +%f+%f %fx%f", s, x, y, w, h,
                   tx, ty, tw, th);
+    glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, d->egl.tex_id);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -661,6 +663,7 @@ void spice_egl_update_display(SpiceDisplay *display)
         width = ceil(width * s);
         height = ceil(height * s);
 
+        glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, d->egl.tex_pointer_id);
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -768,13 +771,30 @@ gboolean spice_egl_update_scanout(SpiceDisplay *display,
                                        (EGLClientBuffer)NULL,
                                        attrs);
 
+    if (d->egl.image == EGL_NO_IMAGE_KHR) {
+        g_set_error(err, SPICE_CLIENT_ERROR, SPICE_CLIENT_ERROR_FAILED,
+                    "failed to create EGL image from DMA-BUF: egl_error=0x%x",
+                    eglGetError());
+        return FALSE;
+    }
+
     d->egl.scanout = *scanout;
 
     if (!gl_make_current(display, NULL))
         return FALSE;
 
+    while (glGetError() != GL_NO_ERROR) {
+    }
+    glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, d->egl.tex_id);
     glEGLImageTargetTexture2DOES(GL_TEXTURE_2D, (GLeglImageOES)d->egl.image);
+    GLenum gl_error = glGetError();
+    if (gl_error != GL_NO_ERROR) {
+        g_set_error(err, SPICE_CLIENT_ERROR, SPICE_CLIENT_ERROR_FAILED,
+                    "failed to bind EGL image to GL texture: gl_error=0x%x",
+                    gl_error);
+        return FALSE;
+    }
 
     return TRUE;
 }
