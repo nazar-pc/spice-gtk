@@ -663,7 +663,6 @@ void spice_egl_update_display(SpiceDisplay *display)
         width = ceil(width * s);
         height = ceil(height * s);
 
-        glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, d->egl.tex_pointer_id);
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -778,11 +777,13 @@ gboolean spice_egl_update_scanout(SpiceDisplay *display,
         return FALSE;
     }
 
-    d->egl.scanout = *scanout;
-
-    if (!gl_make_current(display, NULL))
+    if (!gl_make_current(display, err)) {
+        eglDestroyImageKHR(d->egl.display, d->egl.image);
+        d->egl.image = NULL;
         return FALSE;
+    }
 
+    /* Clear stale GL errors so the following check only covers the image bind. */
     while (glGetError() != GL_NO_ERROR) {
     }
     glActiveTexture(GL_TEXTURE0);
@@ -793,8 +794,12 @@ gboolean spice_egl_update_scanout(SpiceDisplay *display,
         g_set_error(err, SPICE_CLIENT_ERROR, SPICE_CLIENT_ERROR_FAILED,
                     "failed to bind EGL image to GL texture: gl_error=0x%x",
                     gl_error);
+        eglDestroyImageKHR(d->egl.display, d->egl.image);
+        d->egl.image = NULL;
         return FALSE;
     }
+
+    d->egl.scanout = *scanout;
 
     return TRUE;
 }
