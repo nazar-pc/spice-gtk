@@ -3,6 +3,7 @@ image: fedora:latest
 variables:
   DEPS_COMMON: git make python3 redhat-rpm-config python3-pyparsing meson
                ninja-build gtk-doc glib2-devel gettext gettext-devel gcc
+               gi-docgen
 
   DEPS_FEDORA: zlib-devel openssl-devel intltool gtk3-devel
                gobject-introspection-devel cyrus-sasl-devel

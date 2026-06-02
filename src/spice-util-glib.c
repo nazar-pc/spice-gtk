@@ -48,6 +48,7 @@ static void spice_util_enable_debug_messages(void)
  * @enabled: %TRUE or %FALSE
  *
  * Enable or disable Spice-GTK debugging messages.
+ * Since: 0.43
  **/
 void spice_glib_set_debug(gboolean enabled)
 {
@@ -89,6 +90,7 @@ gboolean spice_glib_get_debug(void)
  * Gets the version string
  *
  * Returns: Spice-GTK version as a const string.
+ * Since: 0.43
  **/
 const gchar *spice_glib_get_version_string(void)
 {
