@@ -1,3 +1,30 @@
+v0.43
+=====
+
+- !132 - Add multi-plane scanout support (SpiceGlScanout2), deprecate
+  spice_display_channel_get_gl_scanout()
+- !145 - Add EGL direct scanout support on X11
+- !141 - Add Windows certificate store support for TLS
+- !142 - Add partial chain verification for TLS certificates
+- GStreamer: prefer playbin3, use h/w decoders with Intel GPUs,
+  fallback to s/w decoder if h/w fails
+- !94 - spice-widget: use nearest scaling for integral scaling factors (#92)
+- !83 - spicy: add command line option to hide menu bar
+- !143 - Migrate documentation from gtk-doc to gi-docgen
+- !128 - wayland: fix mouse ungrab in server mode
+- !125 - wayland: use separate event queue thread for widgets
+- !127 - gstaudio: fix race replacing existing channels on connect
+- !126 - spice-channel: read all available data from OpenSSL buffer
+- !144 - usb-backend: fix missing refcount increase when allocating device from fd
+- !118 - usb-backend: fix compiling with i686 clang in mingw
+- !124 - channel-display: fix wrong macro expansion
+- !123 - gstreamer: fix leak using GstBus watch
+- !122 - Fix symbol visibility and export handling
+- !117 - Remove dependency on gobject-introspection-1.0
+- Translation updates
+- Require meson >= 0.58
+- Require spice-protocol >= 0.14.5
+
 v0.42
 =====
 
