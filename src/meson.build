@@ -12,12 +12,17 @@ if meson.project_version().startswith('UNKNOWN')
 else
   version_info = meson.project_version().split('.')
   major = '@0@'.format(version_info[0])
-  minor = '@0@'.format(version_info[1])
+  minor = '@0@'.format(version_info[1].split('-')[0])
   micro = '0'
   if version_info.length() > 2
     micro = version_info[2].split('-')[0]
   endif
 endif
+
+version_data = configuration_data()
+version_data.set('SPICE_GTK_MAJOR_VERSION', major)
+version_data.set('SPICE_GTK_MINOR_VERSION', minor)
+version_data.set('SPICE_GTK_MICRO_VERSION', micro)
 
 script = ''
 # versions, [major, minimum_minor, maximum_minor]
@@ -62,10 +67,6 @@ foreach version: versions
 '''.format('0', version, script)
 endforeach
 
-version_data = configuration_data()
-version_data.set('SPICE_GTK_MAJOR_VERSION', major)
-version_data.set('SPICE_GTK_MINOR_VERSION', minor)
-version_data.set('SPICE_GTK_MICRO_VERSION', micro)
 version_data.set('SPICE_VERSION_MACROS', script)
 spice_version_h = configure_file(input : 'spice-version.h.in',
                                  output : 'spice-version.h',
