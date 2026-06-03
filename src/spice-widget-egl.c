@@ -284,13 +284,49 @@ end:
 
     d->egl.context_ready = TRUE;
 
-    if (spice_display_channel_get_gl_scanout2(d->display) != NULL) {
+    if (d->display != NULL &&
+        spice_display_channel_get_gl_scanout2(d->display) != NULL) {
         DISPLAY_DEBUG(display, "scanout present during egl init, updating widget");
         spice_display_widget_gl_scanout(display);
         spice_display_widget_update_monitor_area(display);
     }
 
     return TRUE;
+}
+
+G_GNUC_INTERNAL
+void spice_egl_set_x11_window_visual(SpiceDisplay *display, GtkWidget *widget)
+{
+#ifdef GDK_WINDOWING_X11
+    SpiceDisplayPrivate *d = display->priv;
+    EGLint visual_id = 0;
+    GdkVisual *visual;
+
+    if (!GDK_IS_X11_DISPLAY(gdk_display_get_default()) ||
+        d->egl.display == EGL_NO_DISPLAY ||
+        d->egl.conf == NULL) {
+        return;
+    }
+
+    if (gtk_widget_get_realized(widget)) {
+        return;
+    }
+
+    if (eglGetConfigAttrib(d->egl.display, d->egl.conf,
+                           EGL_NATIVE_VISUAL_ID, &visual_id) != EGL_TRUE ||
+        visual_id == 0) {
+        return;
+    }
+
+    visual = gdk_x11_screen_lookup_visual(gtk_widget_get_screen(widget),
+                                          visual_id);
+    if (visual == NULL) {
+        g_warning("No GDK visual found for EGL native visual 0x%x", visual_id);
+        return;
+    }
+
+    gtk_widget_set_visual(widget, visual);
+#endif
 }
 
 static gboolean
@@ -323,6 +359,19 @@ gl_make_current(SpiceDisplay *display, GError **err)
     return TRUE;
 }
 
+static void
+spice_egl_prepare_default_framebuffer(void)
+{
+#ifdef GDK_WINDOWING_X11
+    if (!GDK_IS_X11_DISPLAY(gdk_display_get_default())) {
+        return;
+    }
+
+    glDrawBuffer(GL_BACK);
+    glReadBuffer(GL_BACK);
+#endif
+}
+
 static gboolean spice_widget_init_egl_win(SpiceDisplay *display, GdkWindow *win,
                                           GError **err)
 {
@@ -334,6 +383,11 @@ static gboolean spice_widget_init_egl_win(SpiceDisplay *display, GdkWindow *win,
 
 #ifdef GDK_WINDOWING_X11
     if (GDK_IS_X11_WINDOW(win)) {
+        if (!gdk_window_ensure_native(win)) {
+            g_set_error_literal(err, SPICE_CLIENT_ERROR, SPICE_CLIENT_ERROR_FAILED,
+                                "failed to ensure native X11 window for EGL");
+            return FALSE;
+        }
         native = (EGLNativeWindowType)GDK_WINDOW_XID(win);
     }
 #endif
@@ -349,8 +403,9 @@ static gboolean spice_widget_init_egl_win(SpiceDisplay *display, GdkWindow *win,
                                             native, NULL);
 
     if (!d->egl.surface) {
-        g_set_error_literal(err, SPICE_CLIENT_ERROR, SPICE_CLIENT_ERROR_FAILED,
-                            "failed to init egl surface");
+        g_set_error(err, SPICE_CLIENT_ERROR, SPICE_CLIENT_ERROR_FAILED,
+                    "failed to init egl surface: egl_error=0x%x",
+                    eglGetError());
         return FALSE;
     }
 
@@ -526,6 +581,7 @@ void spice_egl_cursor_set(SpiceDisplay *display)
     int width = gdk_pixbuf_get_width(image);
     int height = gdk_pixbuf_get_height(image);
 
+    glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, d->egl.tex_pointer_id);
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -549,6 +605,8 @@ void spice_egl_update_display(SpiceDisplay *display)
     g_return_if_fail(d->ready);
     if (!gl_make_current(display, NULL))
         return;
+
+    spice_egl_prepare_default_framebuffer();
 
     spice_display_get_scaling(display, &s, &x, &y, &w, &h);
 
@@ -581,6 +639,7 @@ void spice_egl_update_display(SpiceDisplay *display)
     }
     DISPLAY_DEBUG(display, "update %f +%d+%d %dx%d +%f+%f %fx%f", s, x, y, w, h,
                   tx, ty, tw, th);
+    glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, d->egl.tex_id);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -711,13 +770,36 @@ gboolean spice_egl_update_scanout(SpiceDisplay *display,
                                        (EGLClientBuffer)NULL,
                                        attrs);
 
-    d->egl.scanout = *scanout;
-
-    if (!gl_make_current(display, NULL))
+    if (d->egl.image == EGL_NO_IMAGE_KHR) {
+        g_set_error(err, SPICE_CLIENT_ERROR, SPICE_CLIENT_ERROR_FAILED,
+                    "failed to create EGL image from DMA-BUF: egl_error=0x%x",
+                    eglGetError());
         return FALSE;
+    }
 
+    if (!gl_make_current(display, err)) {
+        eglDestroyImageKHR(d->egl.display, d->egl.image);
+        d->egl.image = NULL;
+        return FALSE;
+    }
+
+    /* Clear stale GL errors so the following check only covers the image bind. */
+    while (glGetError() != GL_NO_ERROR) {
+    }
+    glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, d->egl.tex_id);
     glEGLImageTargetTexture2DOES(GL_TEXTURE_2D, (GLeglImageOES)d->egl.image);
+    GLenum gl_error = glGetError();
+    if (gl_error != GL_NO_ERROR) {
+        g_set_error(err, SPICE_CLIENT_ERROR, SPICE_CLIENT_ERROR_FAILED,
+                    "failed to bind EGL image to GL texture: gl_error=0x%x",
+                    gl_error);
+        eglDestroyImageKHR(d->egl.display, d->egl.image);
+        d->egl.image = NULL;
+        return FALSE;
+    }
+
+    d->egl.scanout = *scanout;
 
     return TRUE;
 }
