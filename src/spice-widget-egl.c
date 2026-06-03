@@ -584,13 +584,18 @@ void spice_egl_cursor_set(SpiceDisplay *display)
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, d->egl.tex_pointer_id);
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
                  width, height, 0,
                  GL_RGBA, GL_UNSIGNED_BYTE,
                  gdk_pixbuf_read_pixels(image));
     glBindTexture(GL_TEXTURE_2D, 0);
+}
+
+static void spice_egl_set_filter_for_scale(double s)
+{
+    GLint filter = s == rint(s) ? GL_NEAREST : GL_LINEAR;
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter);
 }
 
 G_GNUC_INTERNAL
@@ -641,8 +646,7 @@ void spice_egl_update_display(SpiceDisplay *display)
                   tx, ty, tw, th);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, d->egl.tex_id);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    spice_egl_set_filter_for_scale(s);
 
     glEGLImageTargetTexture2DOES(GL_TEXTURE_2D, (GLeglImageOES)d->egl.image);
 
@@ -664,6 +668,7 @@ void spice_egl_update_display(SpiceDisplay *display)
         height = ceil(height * s);
 
         glBindTexture(GL_TEXTURE_2D, d->egl.tex_pointer_id);
+        spice_egl_set_filter_for_scale(s);
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         client_draw_rect_tex(display,
