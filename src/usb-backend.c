@@ -807,7 +807,7 @@ int spice_usb_backend_read_guest_data(SpiceUsbBackendChannel *ch, uint8_t *data,
 
 GError *spice_usb_backend_get_error_details(int error_code, gchar *desc)
 {
-    GError *err;
+    GError *err = NULL;
     switch (error_code) {
         case USB_REDIR_ERROR_READ_PARSE:
             err = g_error_new(SPICE_CLIENT_ERROR, SPICE_CLIENT_ERROR_FAILED,
