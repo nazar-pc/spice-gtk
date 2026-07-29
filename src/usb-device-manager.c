@@ -532,7 +532,7 @@ static void spice_usb_device_manager_class_init(SpiceUsbDeviceManagerClass *klas
                              0,
                              G_MAXINT,
                              0,
-                             G_PARAM_READABLE);
+                             G_PARAM_READABLE | G_PARAM_STATIC_STRINGS);
     g_object_class_install_property(gobject_class, PROP_FREE_CHANNELS, pspec);
 
     /**
