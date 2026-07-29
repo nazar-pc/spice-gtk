@@ -150,8 +150,7 @@ static gboolean display_frame(gpointer video_decoder)
 
     g_mutex_lock(&decoder->queues_mutex);
     decoder->timer_id = 0;
-    gstframe = decoder->display_frame;
-    decoder->display_frame = NULL;
+    gstframe = g_steal_pointer(&decoder->display_frame);
     g_mutex_unlock(&decoder->queues_mutex);
     /* If the queue is empty we don't even need to reschedule */
     g_return_val_if_fail(gstframe, G_SOURCE_REMOVE);

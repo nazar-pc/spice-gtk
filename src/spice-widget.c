@@ -3270,8 +3270,7 @@ static void cursor_move(SpiceCursorChannel *channel, gint x, gint y, gpointer da
     /* apparently we have to restore cursor when "cursor_move" */
     if (d->show_cursor != NULL) {
         g_clear_object(&d->mouse_cursor);
-        d->mouse_cursor = d->show_cursor;
-        d->show_cursor = NULL;
+        d->mouse_cursor = g_steal_pointer(&d->show_cursor);
         update_mouse_pointer(display);
     }
 }
