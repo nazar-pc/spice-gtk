@@ -40,7 +40,7 @@ typedef struct _SpiceFileTransferTask SpiceFileTransferTask;
 typedef struct _SpiceFileTransferTaskClass SpiceFileTransferTaskClass;
 
 SPICE_GTK_AVAILABLE_IN_0_31
-GType spice_file_transfer_task_get_type(void) G_GNUC_CONST;
+GType spice_file_transfer_task_get_type(void);
 
 SPICE_GTK_AVAILABLE_IN_0_31
 char* spice_file_transfer_task_get_filename(SpiceFileTransferTask *self);

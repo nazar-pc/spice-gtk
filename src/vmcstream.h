@@ -32,7 +32,7 @@ G_BEGIN_DECLS
 typedef struct _SpiceVmcInputStreamClass     SpiceVmcInputStreamClass;
 typedef struct _SpiceVmcInputStream          SpiceVmcInputStream;
 
-GType          spice_vmc_input_stream_get_type   (void) G_GNUC_CONST;
+GType          spice_vmc_input_stream_get_type   (void);
 void           spice_vmc_input_stream_co_data    (SpiceVmcInputStream *input,
                                                   const gpointer data,
                                                   gsize size);
@@ -59,7 +59,7 @@ gssize         spice_vmc_input_stream_read_all_finish(GInputStream       *stream
 typedef struct _SpiceVmcOutputStreamClass     SpiceVmcOutputStreamClass;
 typedef struct _SpiceVmcOutputStream          SpiceVmcOutputStream;
 
-GType           spice_vmc_output_stream_get_type (void) G_GNUC_CONST;
+GType           spice_vmc_output_stream_get_type (void);
 
 #define SPICE_TYPE_VMC_STREAM                (spice_vmc_stream_get_type ())
 #define SPICE_VMC_STREAM(o)                  (G_TYPE_CHECK_INSTANCE_CAST ((o), SPICE_TYPE_VMC_STREAM, SpiceVmcStream))
@@ -71,7 +71,7 @@ GType           spice_vmc_output_stream_get_type (void) G_GNUC_CONST;
 typedef struct _SpiceVmcStreamClass           SpiceVmcStreamClass;
 typedef struct _SpiceVmcStream                SpiceVmcStream;
 
-GType           spice_vmc_stream_get_type        (void) G_GNUC_CONST;
+GType           spice_vmc_stream_get_type        (void);
 SpiceVmcStream* spice_vmc_stream_new             (SpiceChannel *channel);
 
 G_END_DECLS

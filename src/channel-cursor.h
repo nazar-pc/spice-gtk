@@ -100,7 +100,7 @@ SPICE_GTK_AVAILABLE_IN_ALL
 GType spice_cursor_channel_get_type(void);
 
 SPICE_GTK_AVAILABLE_IN_0_34
-GType spice_cursor_shape_get_type(void) G_GNUC_CONST;
+GType spice_cursor_shape_get_type(void);
 
 G_END_DECLS
 

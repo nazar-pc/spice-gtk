@@ -183,7 +183,7 @@ gboolean spice_display_channel_change_preferred_video_codec_types(SpiceChannel *
                                                                   gsize ncodecs, GError **err);
 
 SPICE_GTK_AVAILABLE_IN_0_31
-GType           spice_gl_scanout_get_type     (void) G_GNUC_CONST;
+GType           spice_gl_scanout_get_type     (void);
 SPICE_GTK_AVAILABLE_IN_0_31
 void            spice_gl_scanout_free         (SpiceGlScanout *scanout);
 

@@ -49,7 +49,7 @@ typedef struct _SpiceURIClass SpiceURIClass;
 typedef struct _SpiceURIPrivate SpiceURIPrivate;
 
 SPICE_GTK_AVAILABLE_IN_0_24
-GType spice_uri_get_type(void) G_GNUC_CONST;
+GType spice_uri_get_type(void);
 
 SPICE_GTK_AVAILABLE_IN_0_24
 const gchar* spice_uri_get_scheme(SpiceURI* uri);
