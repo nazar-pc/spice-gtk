@@ -860,7 +860,7 @@ static void spice_usb_device_manager_hotplug_cb(void *user_data,
                                                 gboolean added)
 {
     SpiceUsbDeviceManager *manager = SPICE_USB_DEVICE_MANAGER(user_data);
-    struct hotplug_idle_cb_args *args = g_malloc0(sizeof(*args));
+    struct hotplug_idle_cb_args *args = g_new0(struct hotplug_idle_cb_args, 1);
 
     args->manager = g_object_ref(manager);
     args->device = spice_usb_backend_device_ref(dev);

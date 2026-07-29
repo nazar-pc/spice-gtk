@@ -413,7 +413,7 @@ CdScsiTarget *cd_scsi_target_alloc(void *target_user_data, uint32_t max_luns)
         return NULL;
     }
 
-    st = g_malloc0(sizeof(*st));
+    st = g_new0(CdScsiTarget, 1);
 
     st->user_data = target_user_data;
     st->state = CD_SCSI_TGT_STATE_RUNNING;
