@@ -982,7 +982,7 @@ static gboolean is_gtk_session_property(const gchar *property)
     int i;
 
     for (i = 0; i < G_N_ELEMENTS(spice_gtk_session_properties); i++) {
-        if (!strcmp(spice_gtk_session_properties[i], property)) {
+        if (g_strcmp0(spice_gtk_session_properties[i], property) == 0) {
             return TRUE;
         }
     }

@@ -102,10 +102,10 @@ static gboolean cb_out_watch(GIOChannel    *channel,
     switch (status) {
         case G_IO_STATUS_NORMAL:
             string[strlen(string) - 1] = 0;
-            if (!strcmp(string, "SUCCESS")) {
+            if (g_strcmp0(string, "SUCCESS") == 0) {
                 success = TRUE;
                 g_task_return_boolean(priv->task, TRUE);
-            } else if (!strcmp(string, "CANCELED")) {
+            } else if (g_strcmp0(string, "CANCELED") == 0) {
                 async_result_set_cancelled(priv->task);
             } else {
                 g_task_return_new_error(priv->task,

@@ -125,8 +125,8 @@ static gboolean check_for_xquartz(GdkDisplay *dpy)
 	char **extensions = XListExtensions(gdk_x11_display_get_xdisplay(dpy),
 					    &nextensions);
 	for (i = 0 ; extensions != NULL && i < nextensions ; i++) {
-		if (strcmp(extensions[i], "Apple-WM") == 0 ||
-		    strcmp(extensions[i], "Apple-DRI") == 0)
+		if (g_strcmp0(extensions[i], "Apple-WM") == 0 ||
+		    g_strcmp0(extensions[i], "Apple-DRI") == 0)
 			match = TRUE;
 	}
 	if (extensions)

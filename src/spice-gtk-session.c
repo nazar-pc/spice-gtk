@@ -1245,9 +1245,9 @@ static gchar *x_special_copied_files_transform_to_data(SpiceGtkSessionPrivate *s
         goto err;
     }
 
-    if (!g_strcmp0(lines[0], "cut")) {
+    if (g_strcmp0(lines[0], "cut") == 0) {
         action = GDK_ACTION_MOVE;
-    } else if (!g_strcmp0(lines[0], "copy")) {
+    } else if (g_strcmp0(lines[0], "copy") == 0) {
         action = GDK_ACTION_COPY;
     } else {
         goto err;
@@ -1282,14 +1282,14 @@ static gchar *nautilus_uris_transform_to_data(SpiceGtkSessionPrivate *s,
         goto err;
     }
 
-    if (g_strcmp0(lines[0], "x-special/nautilus-clipboard")) {
+    if (g_strcmp0(lines[0], "x-special/nautilus-clipboard") != 0) {
         *retry_out = TRUE;
         goto err;
     }
 
-    if (!g_strcmp0(lines[1], "cut")) {
+    if (g_strcmp0(lines[1], "cut") == 0) {
         action = GDK_ACTION_MOVE;
-    } else if (!g_strcmp0(lines[1], "copy")) {
+    } else if (g_strcmp0(lines[1], "copy") == 0) {
         action = GDK_ACTION_COPY;
     } else {
         goto err;
@@ -1297,7 +1297,7 @@ static gchar *nautilus_uris_transform_to_data(SpiceGtkSessionPrivate *s,
 
     /* the list of uris must end with \n,
      * so there must be an empty string after the split */
-    if (g_strcmp0(lines[n_lines-1], "")) {
+    if (g_strcmp0(lines[n_lines-1], "") != 0) {
         goto err;
     }
     g_clear_pointer(&lines[n_lines-1], g_free);

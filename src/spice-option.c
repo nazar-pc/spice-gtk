@@ -119,21 +119,21 @@ static gboolean parse_secure_channels(const gchar *option_name, const gchar *val
 static gboolean parse_preferred_compression(const gchar *option_name, const gchar *value,
                                             gpointer data, GError **error)
 {
-    if (!strcmp(value, "auto-glz")) {
+    if (g_strcmp0(value, "auto-glz") == 0) {
         preferred_compression = SPICE_IMAGE_COMPRESSION_AUTO_GLZ;
-    } else if (!strcmp(value, "auto-lz")) {
+    } else if (g_strcmp0(value, "auto-lz") == 0) {
         preferred_compression = SPICE_IMAGE_COMPRESSION_AUTO_LZ;
-    } else if (!strcmp(value, "quic")) {
+    } else if (g_strcmp0(value, "quic") == 0) {
         preferred_compression = SPICE_IMAGE_COMPRESSION_QUIC;
-    } else if (!strcmp(value, "glz")) {
+    } else if (g_strcmp0(value, "glz") == 0) {
         preferred_compression = SPICE_IMAGE_COMPRESSION_GLZ;
-    } else if (!strcmp(value, "lz")) {
+    } else if (g_strcmp0(value, "lz") == 0) {
         preferred_compression = SPICE_IMAGE_COMPRESSION_LZ;
 #ifdef USE_LZ4
-    } else if (!strcmp(value, "lz4")) {
+    } else if (g_strcmp0(value, "lz4") == 0) {
         preferred_compression = SPICE_IMAGE_COMPRESSION_LZ4;
 #endif
-    } else if (!strcmp(value, "off")) {
+    } else if (g_strcmp0(value, "off") == 0) {
         preferred_compression = SPICE_IMAGE_COMPRESSION_OFF;
     } else {
         preferred_compression = SPICE_IMAGE_COMPRESSION_INVALID;

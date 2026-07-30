@@ -538,7 +538,7 @@ gboolean spice_smartcard_manager_init_finish(SpiceSession *session,
 gboolean spice_smartcard_reader_is_software(SpiceSmartcardReader *reader)
 {
     g_return_val_if_fail(reader != NULL, FALSE);
-    return (strcmp(vreader_get_name((VReader*)reader), SPICE_SOFTWARE_READER_NAME) == 0);
+    return (g_strcmp0(vreader_get_name((VReader*)reader), SPICE_SOFTWARE_READER_NAME) == 0);
 }
 
 /**
