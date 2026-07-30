@@ -294,11 +294,10 @@ static void attach(const void *param)
 static void
 write_test_iso(void)
 {
-    uint8_t sector[2048];
+    char sector[2048] = "sector 0";
+
     FILE *f = fopen(TEST_CD_ISO_FILE, "wb");
     g_assert_nonnull(f);
-    memset(sector, 0, sizeof(sector));
-    strcpy((char*) sector, "sector 0");
     fwrite(sector, sizeof(sector), 1, f);
     fclose(f);
 }

@@ -118,7 +118,7 @@ static void spice_channel_init(SpiceChannel *channel)
     c->fd = -1;
     c->auth_needs_username = FALSE;
     c->auth_needs_password = FALSE;
-    strcpy(c->name, "?");
+    g_strlcpy(c->name, "?", sizeof(c->name));
     c->caps = g_array_new(FALSE, TRUE, sizeof(guint32));
     c->common_caps = g_array_new(FALSE, TRUE, sizeof(guint32));
     c->remote_caps = g_array_new(FALSE, TRUE, sizeof(guint32));

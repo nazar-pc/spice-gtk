@@ -1338,7 +1338,7 @@ static void main_channel_event(SpiceChannel *channel, SpiceChannelEvent event,
         break;
     case SPICE_CHANNEL_ERROR_AUTH:
         g_warning("main channel: auth failure (wrong password?)");
-        strcpy(password, "");
+        memset(password, 0, sizeof(password));
         /* FIXME i18 */
         rc = ask_user(NULL, "Authentication",
                       "Please enter the spice server password",
