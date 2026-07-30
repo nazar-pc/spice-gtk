@@ -16,11 +16,8 @@
    License along with this library; if not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef SPICY_CONNECT_H
-#define SPICY_CONNECT_H
+#pragma once
 
 #include "spice-widget.h"
 
 gboolean spicy_connect_dialog(SpiceSession *session);
-
-#endif

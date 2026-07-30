@@ -14,8 +14,7 @@
    You should have received a copy of the GNU Lesser General Public
    License along with this library; if not, see <http://www.gnu.org/licenses/>.
 */
-#ifndef SPICE_OPTION_H
-#define SPICE_OPTION_H
+#pragma once
 
 #if !defined(__SPICE_CLIENT_H_INSIDE__) && !defined(SPICE_COMPILATION)
 #warning "Only <spice-client.h> can be included directly"
@@ -32,5 +31,3 @@ SPICE_GTK_AVAILABLE_IN_0_7
 void spice_set_session_option(SpiceSession *session);
 
 G_END_DECLS
-
-#endif /* SPICE_OPTION_H */

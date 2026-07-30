@@ -14,8 +14,7 @@
    You should have received a copy of the GNU Lesser General Public
    License along with this library; if not, see <http://www.gnu.org/licenses/>.
 */
-#ifndef SPICE_UTIL_H
-#define SPICE_UTIL_H
+#pragma once
 
 #include <glib-object.h>
 
@@ -63,5 +62,3 @@ gchar* spice_glib_uuid_to_string(const guint8 uuid[16]);
 #define SPICE_RESERVED_PADDING (10 * sizeof(void*)) GLIB_DEPRECATED_MACRO
 
 G_END_DECLS
-
-#endif /* SPICE_UTIL_H */

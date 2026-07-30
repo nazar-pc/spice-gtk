@@ -86,6 +86,10 @@ foreach func : ['clearenv', 'strtok_r']
   endif
 endforeach
 
+if not compiler.compiles('#pragma once', name: '#pragma once')
+  error('compiler does not support #pragma once')
+endif
+
 #
 # check for mandatory dependencies
 #

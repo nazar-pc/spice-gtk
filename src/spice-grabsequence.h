@@ -19,8 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
-#ifndef SPICE_GRAB_SEQUENCE_H
-#define SPICE_GRAB_SEQUENCE_H
+#pragma once
 
 #if !defined(__SPICE_CLIENT_GTK_H_INSIDE__) && !defined(SPICE_COMPILATION)
 #warning "Only <spice-client-gtk.h> can be included directly"
@@ -56,8 +55,6 @@ gchar *spice_grab_sequence_as_string(SpiceGrabSequence *sequence);
 
 
 G_END_DECLS
-
-#endif /* SPICE_GRAB_SEQUENCE_H */
 
 /*
  * Local variables:

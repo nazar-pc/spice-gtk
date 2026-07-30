@@ -16,8 +16,7 @@
    License along with this library; if not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef SPICE_CMDLINE_H_
-# define SPICE_CMDLINE_H_
+#pragma once
 
 G_BEGIN_DECLS
 
@@ -25,5 +24,3 @@ GOptionGroup *spice_cmdline_get_option_group(void);
 void spice_cmdline_session_setup(SpiceSession *session);
 
 G_END_DECLS
-
-#endif // SPICE_CMDLINE_H_

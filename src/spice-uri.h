@@ -14,8 +14,7 @@
    You should have received a copy of the GNU Lesser General Public
    License along with this library; if not, see <http://www.gnu.org/licenses/>.
 */
-#ifndef __SPICE_URI_H__
-#define __SPICE_URI_H__
+#pragma once
 
 #if !defined(__SPICE_CLIENT_H_INSIDE__) && !defined(SPICE_COMPILATION)
 #warning "Only <spice-client.h> can be included directly"
@@ -75,5 +74,3 @@ SPICE_GTK_AVAILABLE_IN_0_24
 void spice_uri_set_password(SpiceURI* uri, const gchar* password);
 
 G_END_DECLS
-
-#endif /* __SPICE_URI_H__ */

@@ -14,8 +14,7 @@
    You should have received a copy of the GNU Lesser General Public
    License along with this library; if not, see <http://www.gnu.org/licenses/>.
 */
-#ifndef __SPICE_CLIENT_SESSION_H__
-#define __SPICE_CLIENT_SESSION_H__
+#pragma once
 
 #if !defined(__SPICE_CLIENT_H_INSIDE__) && !defined(SPICE_COMPILATION)
 #warning "Only <spice-client.h> can be included directly"
@@ -127,5 +126,3 @@ SPICE_GTK_AVAILABLE_IN_0_27
 gboolean spice_session_is_for_migration(SpiceSession *session);
 
 G_END_DECLS
-
-#endif /* __SPICE_CLIENT_SESSION_H__ */

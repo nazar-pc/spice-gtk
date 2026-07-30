@@ -14,8 +14,7 @@
    You should have received a copy of the GNU Lesser General Public
    License along with this library; if not, see <http://www.gnu.org/licenses/>.
 */
-#ifndef __SPICE_CLIENT_INPUTS_CHANNEL_H__
-#define __SPICE_CLIENT_INPUTS_CHANNEL_H__
+#pragma once
 
 #if !defined(__SPICE_CLIENT_H_INSIDE__) && !defined(SPICE_COMPILATION)
 #warning "Only <spice-client.h> can be included directly"
@@ -123,5 +122,3 @@ void spice_inputs_key_press_and_release(SpiceInputsChannel *channel, guint scanc
 #endif
 
 G_END_DECLS
-
-#endif /* __SPICE_CLIENT_INPUTS_CHANNEL_H__ */
