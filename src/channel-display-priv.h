@@ -195,7 +195,6 @@ guint32 stream_get_time(display_stream *st);
 void stream_dropped_frame_on_playback(display_stream *st);
 #define SPICE_UNKNOWN_STRIDE 0
 void stream_display_frame(display_stream *st, SpiceFrame *frame, uint32_t width, uint32_t height, int stride, uint8_t* data);
-guintptr get_window_handle(display_stream *st);
 gboolean hand_pipeline_to_widget(display_stream *st,  GstPipeline *pipeline);
 
 void spice_frame_free(SpiceFrame *frame);
