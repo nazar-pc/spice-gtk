@@ -221,6 +221,8 @@ spice_gtk_session_constructed(GObject *gobject)
     GList *list;
     GList *it;
 
+    G_OBJECT_CLASS(spice_gtk_session_parent_class)->constructed(gobject);
+
     self = SPICE_GTK_SESSION(gobject);
     s = self->priv;
     if (!s->session)

@@ -260,6 +260,8 @@ static void spice_usb_device_widget_constructed(GObject *gobject)
     GError *err = NULL;
     gchar *str;
 
+    G_OBJECT_CLASS(spice_usb_device_widget_parent_class)->constructed(gobject);
+
     self = SPICE_USB_DEVICE_WIDGET(gobject);
     priv = self->priv;
     if (!priv->session) {

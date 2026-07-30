@@ -667,6 +667,8 @@ spice_file_transfer_task_finalize(GObject *object)
 static void
 spice_file_transfer_task_constructed(GObject *object)
 {
+    G_OBJECT_CLASS(spice_file_transfer_task_parent_class)->constructed(object);
+
     SpiceFileTransferTask *self = SPICE_FILE_TRANSFER_TASK(object);
 
     if (spice_util_get_debug()) {

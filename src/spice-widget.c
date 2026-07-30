@@ -750,6 +750,8 @@ spice_display_constructed(GObject *gobject)
     GList *list;
     GList *it;
 
+    G_OBJECT_CLASS(spice_display_parent_class)->constructed(gobject);
+
     display = SPICE_DISPLAY(gobject);
     d = display->priv;
 
