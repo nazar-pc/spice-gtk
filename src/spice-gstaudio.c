@@ -276,7 +276,7 @@ static gboolean update_mmtime_timeout_cb(gpointer data)
     }
     gst_query_unref (q);
 
-    return TRUE;
+    return G_SOURCE_CONTINUE;
 }
 
 static void playback_start(SpicePlaybackChannel *channel, gint format, gint channels,

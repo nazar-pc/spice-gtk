@@ -133,13 +133,13 @@ static gboolean output_queue_idle(gpointer user_data)
 
     if (q->flushing) {
         q->idle_id = 0;
-        return FALSE;
+        return G_SOURCE_REMOVE;
     }
 
     e = g_queue_pop_head(q->queue);
     if (!e) {
         q->idle_id = 0;
-        return FALSE;
+        return G_SOURCE_REMOVE;
     }
 
     if (!g_output_stream_write_all(q->output, e->buf, e->size, NULL, NULL, &error))
@@ -150,7 +150,7 @@ static gboolean output_queue_idle(gpointer user_data)
     q->flushing = TRUE;
     g_output_stream_flush_async(q->output, G_PRIORITY_DEFAULT, NULL, output_queue_flush_cb, e);
 
-    return TRUE;
+    return G_SOURCE_CONTINUE;
 
 err:
     g_warning("failed to write to output stream");
@@ -159,7 +159,7 @@ err:
     g_clear_error(&error);
 
     q->idle_id = 0;
-    return FALSE;
+    return G_SOURCE_REMOVE;
 }
 
 static void output_queue_push(OutputQueue *q, const guint8 *buf, gsize size,

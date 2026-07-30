@@ -714,7 +714,7 @@ static gboolean spice_channel_idle_wakeup(gpointer user_data)
 
     spice_channel_wakeup(channel, FALSE);
 
-    return FALSE;
+    return G_SOURCE_REMOVE;
 }
 
 /* any context (system/co-routine/usb-event-thread) */

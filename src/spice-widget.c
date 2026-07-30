@@ -1563,7 +1563,7 @@ static gboolean key_press_delayed(gpointer data)
     SpiceDisplayPrivate *d = display->priv;
 
     if (d->key_delayed_scancode == 0)
-        return FALSE;
+        return G_SOURCE_REMOVE;
 
     spice_inputs_channel_key_press(d->inputs, d->key_delayed_scancode);
     d->key_delayed_scancode = 0;
@@ -1573,7 +1573,7 @@ static gboolean key_press_delayed(gpointer data)
         d->key_delayed_id = 0;
     }
 
-    return FALSE;
+    return G_SOURCE_REMOVE;
 }
 
 static bool send_pause(SpiceDisplay *display, GdkEventType type)
