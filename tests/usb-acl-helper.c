@@ -181,7 +181,7 @@ static void test_acl_helper_client_canceled(Fixture *fixture, gconstpointer user
     g_setenv("TEST_NORESPONSE", "1", TRUE);
     spice_usb_acl_helper_open_acl_async(fixture->acl_helper, 1, 1,
                                         fixture->cancellable, client_canceled_cb, fixture);
-    g_idle_add(cancel_test, fixture);
+    G_GNUC_UNUSED guint idle_id = g_idle_add(cancel_test, fixture);
     g_main_loop_run(fixture->loop);
     g_unsetenv("TEST_NORESPONSE");
 }

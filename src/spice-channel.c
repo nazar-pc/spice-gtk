@@ -2766,7 +2766,7 @@ cleanup:
         c->event = SPICE_CHANNEL_ERROR_CONNECT;
     }
 
-    g_idle_add(spice_channel_delayed_unref, channel);
+    G_GNUC_UNUSED guint idle_id = g_idle_add(spice_channel_delayed_unref, channel);
     /* Co-routine exits now - the SpiceChannel object may no longer exist,
        so don't do anything else now unless you like SEGVs */
     return NULL;

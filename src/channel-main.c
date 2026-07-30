@@ -1797,8 +1797,7 @@ static void main_handle_channels_list(SpiceChannel *channel, SpiceMsgIn *in)
         c->id = msg->channels[i].id;
         /* no need to explicitly switch to main context, since
            synchronous call is not needed. */
-        /* no need to track idle, session is refed */
-        g_idle_add((GSourceFunc)_channel_new, c);
+        G_GNUC_UNUSED guint idle_id = g_idle_add((GSourceFunc)_channel_new, c);
     }
 }
 
@@ -2270,8 +2269,9 @@ spice_migrate_unref(spice_migrate *mig)
 static inline void
 spice_migrate_idle_add(gboolean (*func)(spice_migrate *mig), spice_migrate *mig)
 {
-    g_idle_add_full(G_PRIORITY_DEFAULT_IDLE, (GSourceFunc) func, spice_migrate_ref(mig),
-                    (GDestroyNotify) spice_migrate_unref);
+    G_GNUC_UNUSED guint idle_id =
+        g_idle_add_full(G_PRIORITY_DEFAULT_IDLE, (GSourceFunc) func, spice_migrate_ref(mig),
+                        (GDestroyNotify) spice_migrate_unref);
 }
 
 static void

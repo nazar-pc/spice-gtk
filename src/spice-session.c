@@ -2269,7 +2269,7 @@ GSocketConnection* spice_session_channel_open_host(SpiceSession *session, SpiceC
     g_socket_client_set_enable_proxy(open_host.client, s->proxy != NULL);
     g_socket_client_set_timeout(open_host.client, SOCKET_TIMEOUT);
 
-    g_idle_add(open_host_idle_cb, &open_host);
+    G_GNUC_UNUSED guint idle_id = g_idle_add(open_host_idle_cb, &open_host);
     /* switch to main loop and wait for connection */
     coroutine_yield(NULL);
 
