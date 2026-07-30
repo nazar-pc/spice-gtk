@@ -237,7 +237,7 @@ static void stdin_read_complete(GObject *src, GAsyncResult *res, gpointer data)
     switch (state) {
     case STATE_WAITING_FOR_BUS_N_DEV:
         busnum = strtol(s, &ep, 10);
-        if (!isspace(*ep)) {
+        if (!g_ascii_isspace(*ep)) {
             FATAL_ERROR("Invalid busnum / devnum: %s\n", s);
             break;
         }

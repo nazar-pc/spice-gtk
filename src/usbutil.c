@@ -99,14 +99,14 @@ static gboolean spice_usbutil_parse_usbids(gchar *path)
     lines = g_strsplit(contents, "\n", -1);
 
     for (i = 0; lines[i]; i++) {
-        if (!isxdigit(lines[i][0]) || !isxdigit(lines[i][1]))
+        if (!g_ascii_isxdigit(lines[i][0]) || !g_ascii_isxdigit(lines[i][1]))
             continue;
 
         for (j = 1; lines[i + j] &&
                    (lines[i + j][0] == '\t' ||
                     lines[i + j][0] == '#'  ||
                     lines[i + j][0] == '\0'); j++) {
-            if (lines[i + j][0] == '\t' && isxdigit(lines[i + j][1]))
+            if (lines[i + j][0] == '\t' && g_ascii_isxdigit(lines[i + j][1]))
                 product_count++;
         }
         i += j - 1;
@@ -128,11 +128,11 @@ static gboolean spice_usbutil_parse_usbids(gchar *path)
     for (i = 0; lines[i]; i++) {
         line = lines[i];
 
-        if (!isxdigit(line[0]) || !isxdigit(line[1]))
+        if (!g_ascii_isxdigit(line[0]) || !g_ascii_isxdigit(line[1]))
             continue;
 
         id = strtoul(line, &line, 16);
-        while (isspace(line[0]))
+        while (g_ascii_isspace(line[0]))
             line++;
 
         usbids_vendor_info[usbids_vendor_count].vendor_id = id;
@@ -146,11 +146,11 @@ static gboolean spice_usbutil_parse_usbids(gchar *path)
                     lines[i + j][0] == '\0'); j++) {
             line = lines[i + j];
 
-            if (line[0] != '\t' || !isxdigit(line[1]))
+            if (line[0] != '\t' || !g_ascii_isxdigit(line[1]))
                 continue;
 
             id = strtoul(line + 1, &line, 16);
-            while (isspace(line[0]))
+            while (g_ascii_isspace(line[0]))
                 line++;
             product_info[product_count].product_id = id;
             snprintf(product_info[product_count].name,
