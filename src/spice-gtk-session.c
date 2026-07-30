@@ -656,7 +656,7 @@ static void clipboard_get_targets(GtkClipboard *clipboard,
 
     /* GTK+ does seem to cache atoms, but not for Wayland */
     g_free(s->atoms[selection]);
-    s->atoms[selection] = g_memdup(atoms, n_atoms * sizeof(GdkAtom));
+    s->atoms[selection] = g_memdup2(atoms, n_atoms * sizeof(GdkAtom));
     s->n_atoms[selection] = n_atoms;
 
     if (s->clip_grabbed[selection]) {
@@ -951,7 +951,7 @@ static gboolean clipboard_grab(SpiceMainChannel *main, guint selection,
 
     g_free(s->clip_targets[selection]);
     s->nclip_targets[selection] = num_targets;
-    s->clip_targets[selection] = g_memdup(targets, sizeof(GtkTargetEntry) * num_targets);
+    s->clip_targets[selection] = g_memdup2(targets, sizeof(GtkTargetEntry) * num_targets);
     /* Receiving a grab implies we've released our own grab */
     s->clip_grabbed[selection] = FALSE;
 
