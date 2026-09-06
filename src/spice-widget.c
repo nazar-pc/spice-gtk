@@ -3370,6 +3370,7 @@ static void gl_draw(SpiceDisplay *display,
 
     if (!d->egl.context_ready) {
         DISPLAY_DEBUG(display, "Draw without GL context, skipping");
+        spice_gl_profile_skip("no GL context");
         spice_display_channel_gl_draw_done(d->display);
         return;
     }
@@ -3377,11 +3378,35 @@ static void gl_draw(SpiceDisplay *display,
     gl = gtk_stack_get_child_by_name(d->stack, "gl-area");
 
     if (gtk_stack_get_visible_child(d->stack) == gl) {
+        spice_gl_profile_skip("GtkGLArea path, not the X11 EGL path");
         gtk_gl_area_queue_render(GTK_GL_AREA(gl));
         d->egl.call_draw_done = TRUE;
     } else {
-        spice_egl_update_display(display);
+        gint64 t0, t1, t2, t3, t4;
+        gboolean drawn;
+
+        /* Draw the guest scanout into the back buffer and release the guest as
+         * soon as the GPU is done reading it, before presenting. Doing the
+         * draw_done after eglSwapBuffers() would block the guest for a vblank
+         * period on every single frame, which throttles the guest rendering
+         * rate to a fraction of the display refresh rate. */
+        /* Subtractive diagnostics: SPICE_GL_ACK_ONLY does nothing but
+         * acknowledge the frame, SPICE_GL_NO_PRESENT draws but never swaps.
+         * Both leave the guest free and measure what it does on its own. */
+        gboolean ack_only = spice_gl_debug_flag("SPICE_GL_ACK_ONLY");
+
+        t0 = g_get_monotonic_time();
+        drawn = !ack_only && spice_egl_draw_display(display);
+        t1 = g_get_monotonic_time();
+        if (drawn)
+            spice_egl_wait_draw_complete(display);
+        t2 = g_get_monotonic_time();
         spice_display_channel_gl_draw_done(d->display);
+        t3 = g_get_monotonic_time();
+        if (drawn && !spice_gl_debug_flag("SPICE_GL_NO_PRESENT"))
+            spice_egl_queue_present(display);
+        t4 = g_get_monotonic_time();
+        spice_gl_profile_frame(t0, t1, t2, t3, t4);
     }
 }
 #else

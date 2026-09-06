@@ -137,6 +137,11 @@ struct _SpiceDisplayPrivate {
     struct {
         gboolean            context_ready;
         gboolean            enabled;
+        gboolean            present_pending;
+        gint64              queued_at;
+        gint64              last_present;
+        guint               present_timer_id;
+        guint               idle_present_id;
         EGLSurface          surface;
         EGLDisplay          display;
         EGLConfig           conf;
@@ -166,6 +171,18 @@ gboolean spice_egl_realize_display           (SpiceDisplay *display, GdkWindow *
                                               GError **err);
 void     spice_egl_unrealize_display         (SpiceDisplay *display);
 void     spice_egl_update_display            (SpiceDisplay *display);
+gboolean spice_egl_draw_display              (SpiceDisplay *display);
+void     spice_egl_wait_draw_complete        (SpiceDisplay *display);
+void     spice_egl_swap_buffers              (SpiceDisplay *display);
+void     spice_egl_queue_present             (SpiceDisplay *display);
+gboolean spice_gl_debug_flag                 (const gchar *name);
+void     spice_gl_profile_tick               (void);
+void     spice_gl_profile_refresh            (gint64 refresh);
+void     spice_gl_profile_expose             (gint64 t0, gint64 t1);
+void     spice_gl_profile_present            (gint64 queued, gint64 t0, gint64 t1);
+void     spice_gl_profile_frame              (gint64 t0, gint64 t1, gint64 t2,
+                                              gint64 t3, gint64 t4);
+void     spice_gl_profile_skip               (const gchar *reason);
 void     spice_egl_resize_display            (SpiceDisplay *display, int w, int h);
 void     spice_egl_set_x11_window_visual     (SpiceDisplay *display, GtkWidget *widget);
 gboolean spice_egl_update_scanout            (SpiceDisplay *display,

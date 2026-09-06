@@ -36,6 +36,16 @@
 #include <gdk/gdkwin32.h>
 #endif
 
+/* Upper bound for waiting on the scanout blit, 1 second in nanoseconds */
+static gboolean spice_gl_env_flag(const gchar *name);
+
+#define SPICE_EGL_FENCE_TIMEOUT_NS (G_GUINT64_CONSTANT(1000000000))
+
+/* Frames accumulated before a profiling line is printed, and the interval
+ * after which a line is printed even if fewer frames arrived */
+#define SPICE_GL_PROFILE_FRAMES 60
+#define SPICE_GL_PROFILE_INTERVAL_US (G_GINT64_CONSTANT(2000000))
+
 #define VERTS_ARRAY_SIZE (sizeof(GLfloat) * 4 * 4)
 #define TEX_ARRAY_SIZE (sizeof(GLfloat) * 4 * 2)
 
@@ -412,6 +422,17 @@ static gboolean spice_widget_init_egl_win(SpiceDisplay *display, GdkWindow *win,
     if (!gl_make_current(display, err))
         return FALSE;
 
+    /* Never let eglSwapBuffers() wait for a vblank: it runs on the main loop,
+     * and blocking there stops the display channel from being serviced, which
+     * throttles the guest to a fraction of the refresh rate. Presentation is
+     * paced to one frame per refresh from the widget's frame clock instead. */
+    /* Keep the vsync'd swap: presenting into a window the compositor samples
+     * requires it, otherwise the compositor picks up half-updated frames.
+     * The wait it implies is avoided by scheduling the swap just before the
+     * vblank rather than by turning it off. */
+    if (spice_gl_env_flag("SPICE_GL_NO_VSYNC"))
+        eglSwapInterval(d->egl.display, 0);
+
     return TRUE;
 }
 
@@ -434,6 +455,17 @@ void spice_egl_unrealize_display(SpiceDisplay *display)
     SpiceDisplayPrivate *d = display->priv;
 
     DISPLAY_DEBUG(display, "egl unrealize %p", d->egl.surface);
+
+    d->egl.present_pending = FALSE;
+    if (d->egl.idle_present_id != 0) {
+        g_source_remove(d->egl.idle_present_id);
+        d->egl.idle_present_id = 0;
+    }
+    if (d->egl.present_timer_id != 0) {
+        g_source_remove(d->egl.present_timer_id);
+        d->egl.present_timer_id = 0;
+    }
+    d->egl.last_present = 0;
 
     if (!gl_make_current(display, NULL))
         return;
@@ -599,7 +631,7 @@ static void spice_egl_set_filter_for_scale(double s)
 }
 
 G_GNUC_INTERNAL
-void spice_egl_update_display(SpiceDisplay *display)
+gboolean spice_egl_draw_display(SpiceDisplay *display)
 {
     SpiceDisplayPrivate *d = display->priv;
     double s;
@@ -607,9 +639,14 @@ void spice_egl_update_display(SpiceDisplay *display)
     gdouble tx, ty, tw, th;
     int prog;
 
-    g_return_if_fail(d->ready);
-    if (!gl_make_current(display, NULL))
-        return;
+    if (!d->ready) {
+        spice_gl_profile_skip("display not ready");
+        return FALSE;
+    }
+    if (!gl_make_current(display, NULL)) {
+        spice_gl_profile_skip("cannot make context current");
+        return FALSE;
+    }
 
     spice_egl_prepare_default_framebuffer();
 
@@ -678,14 +715,315 @@ void spice_egl_update_display(SpiceDisplay *display)
                              0, 0, 1, 1);
     }
 
+    glUseProgram(prog);
+
+    return TRUE;
+}
+
+static gboolean spice_gl_env_flag(const gchar *name)
+{
+    const gchar *val = g_getenv(name);
+
+    return val != NULL && val[0] != '\0' && !g_str_equal(val, "0");
+}
+
+G_GNUC_INTERNAL
+gboolean spice_gl_debug_flag(const gchar *name)
+{
+    return spice_gl_env_flag(name);
+}
+
+/* Block until the GPU is done sampling the guest scanout texture, so that the
+ * buffer can be handed back to the guest for reuse. Unlike waiting for
+ * eglSwapBuffers(), this does not wait for a vblank. */
+G_GNUC_INTERNAL
+void spice_egl_wait_draw_complete(SpiceDisplay *display)
+{
+    GLsync fence;
+
+    if (spice_gl_env_flag("SPICE_GL_NO_FENCE"))
+        return;
+
+    if (!gl_make_current(display, NULL))
+        return;
+
+    if (epoxy_gl_version() < 32 && !epoxy_has_gl_extension("GL_ARB_sync")) {
+        glFinish();
+        return;
+    }
+
+    fence = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+    if (fence == NULL) {
+        glFinish();
+        return;
+    }
+
+    glClientWaitSync(fence, GL_SYNC_FLUSH_COMMANDS_BIT,
+                     SPICE_EGL_FENCE_TIMEOUT_NS);
+    glDeleteSync(fence);
+}
+
+G_GNUC_INTERNAL
+void spice_egl_swap_buffers(SpiceDisplay *display)
+{
 #ifdef GDK_WINDOWING_X11
+    SpiceDisplayPrivate *d = display->priv;
+
     if (GDK_IS_X11_DISPLAY(gdk_display_get_default())) {
         /* gtk+ does the swap with gtkglarea */
         eglSwapBuffers(d->egl.display, d->egl.surface);
     }
 #endif
+}
 
-    glUseProgram(prog);
+G_GNUC_INTERNAL
+void spice_egl_update_display(SpiceDisplay *display)
+{
+    SpiceDisplayPrivate *d = display->priv;
+    gint64 t0, t1;
+
+    if (!d->egl.present_pending && !spice_egl_draw_display(display))
+        return;
+
+    t0 = g_get_monotonic_time();
+    spice_egl_queue_present(display);
+    t1 = g_get_monotonic_time();
+    spice_gl_profile_expose(t0, t1);
+}
+
+static void spice_egl_present_now(SpiceDisplay *display)
+{
+    SpiceDisplayPrivate *d = display->priv;
+    gint64 t0, t1;
+
+    d->egl.present_pending = FALSE;
+    t0 = g_get_monotonic_time();
+    spice_egl_swap_buffers(display);
+    t1 = g_get_monotonic_time();
+
+    /* The swap returns when the frame has been presented, so this is the most
+     * recent vblank as far as this surface is concerned */
+    d->egl.last_present = t1;
+    spice_gl_profile_present(d->egl.queued_at, t0, t1);
+}
+
+
+/* Refresh period of the monitor showing the widget, from RandR. GTK's frame
+ * clock cannot be used for this: a compositor that does not implement the
+ * frame synchronisation protocol leaves it free running at 60Hz with no
+ * timing information at all. */
+static gint64 spice_egl_refresh_period(SpiceDisplay *display)
+{
+    GdkWindow *window;
+    GdkDisplay *gdk_display;
+    GdkMonitor *monitor;
+    int rate;
+
+    window = gtk_widget_get_window(GTK_WIDGET(display));
+    if (window == NULL)
+        return 0;
+
+    gdk_display = gdk_window_get_display(window);
+    monitor = gdk_display_get_monitor_at_window(gdk_display, window);
+    rate = monitor != NULL ? gdk_monitor_get_refresh_rate(monitor) : 0;
+    if (rate <= 0)
+        return 0;
+
+    /* milli-Hz to microseconds */
+    return G_USEC_PER_SEC * G_GINT64_CONSTANT(1000) / rate;
+}
+
+static gboolean spice_egl_present_timer(gpointer data)
+{
+    SpiceDisplay *display = SPICE_DISPLAY(data);
+    SpiceDisplayPrivate *d = display->priv;
+
+    d->egl.present_timer_id = 0;
+    if (d->egl.present_pending)
+        spice_egl_present_now(display);
+
+    return G_SOURCE_REMOVE;
+}
+
+/* Present the frame that was just drawn. eglSwapBuffers() waits for the
+ * vblank, and doing that on the main loop stops the display channel from
+ * being serviced, which throttles the guest. Instead of swapping as soon as
+ * the frame is drawn, wait until shortly before the next vblank is due and
+ * swap then: the wait inside the swap is reduced to the guard interval, the
+ * presentation stays synchronised, and the guest keeps rendering meanwhile. */
+G_GNUC_INTERNAL
+void spice_egl_queue_present(SpiceDisplay *display)
+{
+    SpiceDisplayPrivate *d = display->priv;
+    gint64 period, guard, due, now;
+
+    d->egl.queued_at = g_get_monotonic_time();
+    d->egl.present_pending = TRUE;
+
+    if (spice_gl_env_flag("SPICE_GL_SYNC_SWAP")) {
+        spice_egl_present_now(display);
+        return;
+    }
+
+    if (d->egl.present_timer_id != 0)
+        return;
+
+    period = spice_egl_refresh_period(display);
+    spice_gl_profile_refresh(period);
+    if (period <= 0) {
+        spice_egl_present_now(display);
+        return;
+    }
+
+    /* Swap this far ahead of the vblank, so the swap still lands in the right
+     * frame if the timer fires a little late */
+    guard = MIN(period / 8, 4 * G_GINT64_CONSTANT(1000));
+
+    now = g_get_monotonic_time();
+    due = d->egl.last_present + period - guard;
+    if (d->egl.last_present == 0 || due <= now) {
+        spice_egl_present_now(display);
+        return;
+    }
+
+    d->egl.present_timer_id = g_timeout_add((due - now) / 1000,
+                                            spice_egl_present_timer, display);
+}
+
+/* Frame clock ticks, presents, and the latency from queueing to presenting */
+static guint spice_gl_ticks, spice_gl_presents;
+static gint64 spice_gl_present_latency, spice_gl_present_swap;
+
+static guint spice_gl_exposes;
+static gint64 spice_gl_expose_swap;
+
+G_GNUC_INTERNAL
+void spice_gl_profile_expose(gint64 t0, gint64 t1)
+{
+    spice_gl_exposes++;
+    spice_gl_expose_swap += t1 - t0;
+}
+
+static gint64 spice_gl_refresh_interval;
+
+G_GNUC_INTERNAL
+void spice_gl_profile_refresh(gint64 refresh)
+{
+    spice_gl_refresh_interval = refresh;
+}
+
+G_GNUC_INTERNAL
+void spice_gl_profile_tick(void)
+{
+    spice_gl_ticks++;
+}
+
+G_GNUC_INTERNAL
+void spice_gl_profile_present(gint64 queued, gint64 t0, gint64 t1)
+{
+    spice_gl_presents++;
+    spice_gl_present_latency += t0 - queued;
+    spice_gl_present_swap += t1 - t0;
+}
+
+/* Frames that never reached the timed path, by reason */
+static guint spice_gl_skipped;
+static const gchar *spice_gl_skip_reason;
+
+G_GNUC_INTERNAL
+void spice_gl_profile_skip(const gchar *reason)
+{
+    static gint64 last_report;
+    gint64 now;
+
+    spice_gl_skipped++;
+    spice_gl_skip_reason = reason;
+
+    if (!spice_gl_env_flag("SPICE_GL_PROFILE"))
+        return;
+
+    /* Report even when every frame is skipped and the timed path never runs */
+    now = g_get_monotonic_time();
+    if (last_report != 0 && now - last_report < SPICE_GL_PROFILE_INTERVAL_US)
+        return;
+
+    if (last_report != 0)
+        g_printerr("spice gl: %u frames skipped in %.2f s: %s\n",
+                   spice_gl_skipped, (now - last_report) / 1e6, reason);
+    last_report = now;
+    spice_gl_skipped = 0;
+}
+
+/* Print where each guest frame goes, averaged over the reporting window.
+ * Enabled with SPICE_GL_PROFILE=1. */
+G_GNUC_INTERNAL
+void spice_gl_profile_frame(gint64 t0, gint64 t1, gint64 t2, gint64 t3, gint64 t4)
+{
+    static gint64 window_start, prev_start;
+    static gint64 interval, draw, fence, ack, swap;
+    static guint frames;
+
+    if (!spice_gl_env_flag("SPICE_GL_PROFILE"))
+        return;
+
+    if (window_start == 0)
+        window_start = t0;
+    if (prev_start != 0)
+        interval += t0 - prev_start;
+    prev_start = t0;
+
+    draw += t1 - t0;
+    fence += t2 - t1;
+    ack += t3 - t2;
+    swap += t4 - t3;
+    frames++;
+
+    if (frames < SPICE_GL_PROFILE_FRAMES &&
+        t4 - window_start < SPICE_GL_PROFILE_INTERVAL_US)
+        return;
+
+    g_printerr("spice gl: %u frames in %.2f s = %.1f fps | frame %.2f ms = "
+               "draw %.2f + fence %.2f + ack %.2f + swap %.2f, idle %.2f | "
+               "skipped %u%s%s\n",
+               frames,
+               (t4 - window_start) / 1e6,
+               interval ? 1e6 * frames / interval : 0.0,
+               interval / 1000.0 / frames,
+               draw / 1000.0 / frames,
+               fence / 1000.0 / frames,
+               ack / 1000.0 / frames,
+               swap / 1000.0 / frames,
+               (interval - draw - fence - ack - swap) / 1000.0 / frames,
+               spice_gl_skipped,
+               spice_gl_skip_reason ? ": " : "",
+               spice_gl_skip_reason ? spice_gl_skip_reason : "");
+
+    g_printerr("spice gl: %u presents, %u clock ticks (%.2f per frame) | "
+               "queue to present %.2f ms + swap %.2f ms\n",
+               spice_gl_presents, spice_gl_ticks,
+               frames ? (gdouble)spice_gl_ticks / frames : 0.0,
+               spice_gl_presents ?
+                   spice_gl_present_latency / 1000.0 / spice_gl_presents : 0.0,
+               spice_gl_presents ?
+                   spice_gl_present_swap / 1000.0 / spice_gl_presents : 0.0);
+
+    g_printerr("spice gl: frame clock reports refresh interval %.2f ms\n",
+               spice_gl_refresh_interval / 1000.0);
+
+    g_printerr("spice gl: %u expose redraws, queue %.2f ms each\n",
+               spice_gl_exposes,
+               spice_gl_exposes ?
+                   spice_gl_expose_swap / 1000.0 / spice_gl_exposes : 0.0);
+
+    spice_gl_ticks = spice_gl_presents = spice_gl_exposes = 0;
+    spice_gl_present_latency = spice_gl_present_swap = 0;
+    spice_gl_expose_swap = 0;
+
+    window_start = prev_start = 0;
+    interval = draw = fence = ack = swap = 0;
+    frames = 0;
+    spice_gl_skipped = 0;
+    spice_gl_skip_reason = NULL;
 }
 
 G_GNUC_INTERNAL
